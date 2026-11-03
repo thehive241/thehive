@@ -1,0 +1,2530 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE HIVE GESTION</title>
+<style>
+:root{
+  --bg:#f4f5f3; --panel:#ffffff; --ink:#1f2420; --ink-soft:#5b645d;
+  --line:#e1e4df; --accent:#2f3d2e; --accent-ink:#ffffff;
+  --accent-soft:#eef1ea; --danger:#a3402f; --warn:#c98a1a;
+  --shadow:0 1px 2px rgba(20,25,20,.06),0 4px 14px rgba(20,25,20,.06);
+  --radius:10px;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15170f; --panel:#1d2018; --ink:#eef0ea; --ink-soft:#a7ada2;
+    --line:#33372c; --accent:#8fae7f; --accent-ink:#15170f;
+    --accent-soft:#252a1f; --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15170f; --panel:#1d2018; --ink:#eef0ea; --ink-soft:#a7ada2;
+  --line:#33372c; --accent:#8fae7f; --accent-ink:#15170f;
+  --accent-soft:#252a1f; --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:"Segoe UI",Arial,Helvetica,sans-serif;}
+body{min-height:100vh;}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;color:inherit;}
+.app{display:flex;flex-direction:column;min-height:100vh;}
+
+/* ---- Top bar ---- */
+.topbar{display:flex;align-items:center;gap:14px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20;flex-wrap:wrap;}
+.brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;white-space:nowrap;}
+.brand img{height:28px;width:auto;display:block;}
+.tabs{display:flex;gap:4px;background:var(--bg);padding:3px;border-radius:999px;border:1px solid var(--line);}
+.tab-btn{border:none;background:transparent;padding:7px 14px;border-radius:999px;font-size:13px;font-weight:600;color:var(--ink-soft);}
+.tab-btn.active{background:var(--accent);color:var(--accent-ink);}
+.spacer{flex:1;}
+.status-pill{font-size:11px;padding:4px 9px;border-radius:999px;background:var(--accent-soft);color:var(--ink-soft);white-space:nowrap;}
+.status-pill.ok{color:#2f6b3a;}
+.status-pill.off{color:var(--warn);}
+
+/* ---- Buttons ---- */
+.btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:8px 13px;border-radius:8px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;}
+.btn:hover{border-color:var(--accent);}
+.btn-primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);}
+.btn-danger{color:var(--danger);border-color:var(--danger);background:transparent;}
+.btn-ghost{background:transparent;border-color:transparent;}
+.btn-sm{padding:5px 9px;font-size:12px;border-radius:6px;}
+.btn:disabled{opacity:.45;cursor:not-allowed;}
+
+/* ---- Layout ---- */
+.view{display:none;padding:16px;max-width:1400px;margin:0 auto;width:100%;}
+.view.active{display:block;}
+.editor-grid{display:grid;grid-template-columns:1fr;gap:16px;}
+@media(min-width:980px){.editor-grid{grid-template-columns:1fr 1fr;align-items:start;}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;}
+.panel + .panel{margin-top:14px;}
+.panel h3{margin:0 0 12px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);}
+
+.field{margin-bottom:11px;}
+.field label{display:block;font-size:12px;color:var(--ink-soft);margin-bottom:4px;font-weight:600;}
+.field input[type=text],.field input[type=date],.field input[type=tel],.field textarea,.field select{
+  width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink);font-size:14px;
+}
+.field textarea{resize:vertical;min-height:38px;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+@media(max-width:700px){.row3{grid-template-columns:1fr;}}
+
+.doctype-toggle{display:flex;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;width:fit-content;}
+.doctype-toggle button{border:none;background:var(--panel);padding:8px 16px;font-size:13px;font-weight:700;color:var(--ink-soft);}
+.doctype-toggle button.active{background:var(--accent);color:var(--accent-ink);}
+
+/* ---- Sections editor ---- */
+.section-block{border:1px dashed var(--line);border-radius:9px;padding:11px;margin-bottom:12px;}
+.section-block-head{display:flex;gap:8px;align-items:center;margin-bottom:9px;}
+.section-block-head input{flex:1;font-weight:700;}
+.line-row,.line-head{display:grid;grid-template-columns:34px minmax(0,1fr) 62px 70px 100px 112px 24px 28px 28px;gap:6px;align-items:start;margin-bottom:6px;}
+.line-head{font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-soft);font-weight:700;margin-bottom:3px;align-items:end;}
+.line-head .r{text-align:right;padding-right:9px;}
+.line-row input,.line-row textarea{width:100%;min-width:0;padding:7px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font-size:13px;}
+.line-row textarea{min-height:34px;resize:vertical;}
+.line-row input[type=number]{text-align:right;font-variant-numeric:tabular-nums;-moz-appearance:textfield;appearance:textfield;}
+.line-row input[type=number]::-webkit-inner-spin-button,.line-row input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+.line-row .montant-disp{padding:8px 9px 8px 6px;font-size:13px;font-weight:600;color:var(--ink);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;}
+.line-row .del-row,.line-row .link-row{border:none;background:transparent;color:var(--ink-soft);font-size:15px;padding:6px 2px;}
+.line-row .del-row:hover{color:var(--danger);}
+.line-row .link-row{opacity:.4;}
+.line-row .link-row:hover:not(:disabled){opacity:1;}
+.line-row .link-row.on{opacity:1;}
+.line-row .link-row:disabled{opacity:.15;cursor:not-allowed;}
+.line-row.linked textarea{border-left:3px solid var(--accent);}
+.line-row .ln{font-size:11.5px;font-weight:700;color:var(--ink-soft);padding:9px 0 0;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.mv{display:flex;flex-direction:column;gap:2px;align-items:center;}
+.mv button{border:none;background:transparent;color:var(--ink-soft);font-size:10px;line-height:1;padding:3px 4px;cursor:pointer;}
+.mv button:hover:not(:disabled){color:var(--accent);}
+.mv button:disabled{opacity:.2;cursor:not-allowed;}
+.section-block-head .mv{flex-direction:row;}
+.sec-no{font-weight:800;font-size:13px;min-width:22px;text-align:center;color:var(--ink-soft);font-variant-numeric:tabular-nums;}
+.sec-no:empty{display:none;}
+.line-row .linked-note{grid-column:span 4;font-size:12px;font-style:italic;color:var(--ink-soft);padding:9px 6px;}
+@media(max-width:700px){
+  .line-head{display:none;}
+  .line-row{grid-template-columns:1fr 1fr 1fr 1fr;}
+  .line-row textarea{grid-column:1/-1;}
+  .line-row .linked-note{grid-column:1/-1;}
+  .line-row .ln{grid-column:1/-1;padding-top:0;}
+  .line-row .mv{grid-column:1/3;flex-direction:row;justify-self:start;}
+  .line-row .link-row{grid-column:3;justify-self:end;}
+  .line-row .del-row{grid-column:4;justify-self:end;}
+}
+.auto-toggle{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-soft);}
+.save-state{font-size:12.5px;color:var(--ink-soft);}
+.save-state.ok{color:var(--accent);font-weight:600;}
+.save-state.warn{color:var(--warn);font-weight:600;}
+.add-row-btn{font-size:12px;padding:6px 10px;}
+.section-actions{display:flex;justify-content:space-between;margin-top:2px;}
+
+.tax-row{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px;}
+.tax-row:last-child{border-bottom:none;}
+.tax-row input[type=text]{width:110px;padding:5px 7px;font-size:13px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);}
+.tax-row input[type=number]{width:64px;padding:5px 7px;font-size:13px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);}
+.tax-row select{padding:5px 7px;font-size:13px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);}
+
+.actions-bar{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;}
+
+/* ---- Preview / printable devis paper ---- */
+.preview-wrap{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px;}
+.paper{background:#ffffff;color:#111111;padding:26px 24px;font-family:Arial,Helvetica,sans-serif;font-size:12.5px;line-height:1.42;border:1px solid #ddd;}
+.paper, .paper table, .paper input{color:#111111;}
+.paper-head{display:flex;gap:12px;align-items:flex-start;border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:14px;}
+.paper-head img{height:46px;width:auto;}
+.paper-head .ident{font-size:9.5px;line-height:1.35;}
+.paper-head .ident b{font-size:11px;}
+.paper-title{text-align:center;font-size:19px;font-weight:800;letter-spacing:.04em;margin:6px 0 14px;}
+.paper-meta{display:flex;justify-content:space-between;gap:16px;margin-bottom:12px;flex-wrap:wrap;}
+.paper-meta .block b{display:block;font-size:11px;margin-bottom:2px;}
+.paper-obj{font-weight:700;text-decoration:underline;margin:10px 0 10px;font-size:13px;}
+table.paper-table{width:100%;border-collapse:collapse;margin-bottom:4px;table-layout:fixed;}
+table.paper-table th{background:#eaeaea;border:1px solid #999;padding:5px 6px;font-size:11px;text-align:left;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+table.paper-table td{border:1px solid #bbb;padding:5px 6px;font-size:11.5px;vertical-align:top;overflow-wrap:anywhere;}
+table.paper-table td.num{text-align:right;white-space:nowrap;overflow-wrap:normal;font-variant-numeric:tabular-nums;}
+table.paper-table td.merged{vertical-align:middle;}
+table.paper-table td.center{text-align:center;overflow-wrap:anywhere;}
+tr.sec-title td{background:#f0f0f0;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+tr.sec-sub td{background:#fff6d8;font-weight:700;text-align:right;font-variant-numeric:tabular-nums;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+tr.grand-total td{background:#111;color:#fff !important;font-weight:800;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+tr.grand-total td *{color:#fff !important;}
+.paper-arrete{margin:12px 0;font-size:12px;}
+.paper-arrete .cadre{border:1.5px solid #111;display:inline-block;padding:6px 10px;font-weight:800;text-transform:uppercase;margin-top:3px;}
+.paper-terms{display:flex;justify-content:space-between;gap:20px;margin-top:16px;font-size:11.5px;flex-wrap:wrap;}
+.paper-terms .totbox{border:1px solid #111;min-width:230px;}
+.paper-terms .totbox div{display:flex;justify-content:space-between;padding:4px 8px;border-bottom:1px solid #ccc;}
+.paper-terms .totbox div:last-child{border-bottom:none;font-weight:800;background:#111;color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.paper-sign{display:flex;justify-content:space-between;margin-top:34px;font-size:11.5px;}
+.paper-sign .line{margin-top:38px;border-top:1px solid #111;width:170px;text-align:center;padding-top:3px;}
+.paper-foot{margin-top:22px;padding-top:6px;border-top:1px solid #999;text-align:center;font-size:8.5px;color:#333 !important;}
+
+/* ---- List / clients tables ---- */
+.searchbar{display:flex;gap:8px;margin-bottom:12px;}
+.searchbar input{flex:1;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);font-size:14px;}
+.searchbar input#relance-seuil{flex:none;width:56px;}
+table.list-table{width:100%;border-collapse:collapse;}
+table.list-table th{text-align:left;font-size:11px;text-transform:uppercase;color:var(--ink-soft);padding:8px 10px;border-bottom:1px solid var(--line);}
+table.list-table td{padding:10px;border-bottom:1px solid var(--line);font-size:13.5px;}
+table.list-table tr:hover td{background:var(--accent-soft);}
+.badge{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--ink-soft);}
+.badge.devis{color:#2b6cb0;}
+.badge.facture{color:#2f6b3a;}
+.badge.avoir{color:#8e44ad;}
+.badge.annulee{color:var(--ink-soft);text-decoration:line-through;}
+.doctype-toggle.locked{pointer-events:none;opacity:.65;}
+.fm-opt{display:flex;gap:8px;align-items:center;padding:9px 11px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px;font-size:13.5px;cursor:pointer;}
+.fm-opt.off{opacity:.4;pointer-events:none;}
+.fm-opt input[type=number]{width:64px;padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font-size:13.5px;text-align:right;}
+.paper-lien{font-size:11px;margin:2px 0 10px;line-height:1.45;}
+.empty-hint{padding:26px 10px;text-align:center;color:var(--ink-soft);font-size:13.5px;}
+.row-actions{display:flex;gap:6px;justify-content:flex-end;}
+
+.modal-back{position:fixed;inset:0;background:rgba(10,12,8,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:16px;}
+.modal-back.show{display:flex;}
+.modal{background:var(--panel);border-radius:12px;padding:18px;max-width:420px;width:100%;box-shadow:var(--shadow);}
+.modal h4{margin-top:0;}
+.modal .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;}
+
+@media print{
+  html, body, .app{background:#fff !important;}
+  .topbar, .modal-back{display:none !important;}
+  .view{display:none !important;}
+  .view.active{display:block !important;padding:0 !important;}
+  .editor-grid{display:block !important;}
+  .editor-grid > div:first-child{display:none !important;}
+  .preview-wrap{border:none !important;box-shadow:none !important;padding:0 !important;background:transparent !important;}
+  .paper{border:none;padding:0;}
+  .paper, .paper table, .paper input{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  @page{margin:14mm;}
+  table.paper-table thead{display:table-header-group;}
+  table.paper-table tr{break-inside:avoid;page-break-inside:avoid;}
+  tr.sec-title{break-after:avoid;page-break-after:avoid;}
+  tr.sec-sub{break-before:avoid;page-break-before:avoid;}
+  .paper-arrete,.paper-terms,.paper-sign{break-inside:avoid;page-break-inside:avoid;}
+}
+/* ---- Paramètres ---- */
+.pr-grid{display:grid;grid-template-columns:1fr;gap:16px;}
+@media(min-width:980px){.pr-grid{grid-template-columns:1fr 1fr;align-items:start;}}
+.logo-box{display:flex;gap:14px;align-items:center;flex-wrap:wrap;}
+.logo-prev{width:150px;height:84px;border:1px dashed var(--line);border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.logo-prev img{max-width:100%;max-height:100%;}
+.pr-note{font-size:12px;color:var(--ink-soft);margin:8px 0 0;line-height:1.5;}
+.pr-state{font-size:13px;padding:8px 10px;border-radius:8px;background:var(--accent-soft);margin-bottom:10px;line-height:1.5;}
+.pr-state.ok{border-left:4px solid var(--accent);}
+.pr-state.warn{border-left:4px solid var(--warn);}
+.pr-state.off{border-left:4px solid var(--danger);}
+#folderPill{cursor:pointer;}
+#folderPill.ok{color:var(--accent);}
+#folderPill.warn{color:var(--warn);}
+/* ---- Agenda ---- */
+.tab-badge{display:inline-block;min-width:18px;padding:1px 6px;margin-left:5px;border-radius:999px;background:var(--danger);color:#fff;font-size:11px;font-weight:700;text-align:center;}
+.tab-badge[hidden]{display:none;}
+.ag-top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px;}
+.ag-alert{border-left:4px solid var(--danger);background:var(--accent-soft);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:13px;}
+.ag-alert b{display:block;margin-bottom:4px;}
+.ag-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px;}
+.ag-chip{border:1px solid var(--line);background:var(--panel);color:var(--ink-soft);border-radius:999px;padding:5px 12px;font-size:12.5px;font-weight:600;}
+.ag-chip.active{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);}
+.ag-grid{display:grid;grid-template-columns:1fr;gap:16px;}
+@media(min-width:980px){.ag-grid{grid-template-columns:360px 1fr;align-items:start;}}
+.ag-group{margin-bottom:16px;}
+.ag-group h4{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);}
+.ag-group.late h4{color:var(--danger);}
+.ag-card{background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--ag,#888);border-radius:9px;padding:10px 12px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start;}
+.ag-card.done{opacity:.55;}
+.ag-card.done .ag-titre{text-decoration:line-through;}
+.ag-body{flex:1;min-width:0;}
+.ag-type{display:inline-block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--ag,#888);}
+.ag-titre{font-size:14.5px;font-weight:700;margin:1px 0 3px;overflow-wrap:anywhere;}
+.ag-meta{font-size:12.5px;color:var(--ink-soft);line-height:1.5;overflow-wrap:anywhere;}
+.ag-rel{font-weight:700;}
+.ag-rel.late{color:var(--danger);}
+.ag-rel.today{color:var(--warn);}
+.ag-actions{display:flex;flex-direction:column;gap:4px;}
+.ag-actions .btn{padding:4px 8px;font-size:12px;}
+#toasts{position:fixed;right:14px;bottom:14px;z-index:60;display:flex;flex-direction:column;gap:8px;max-width:340px;width:calc(100% - 28px);}
+.toast{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-left:5px solid var(--ag,var(--accent));border-radius:9px;box-shadow:var(--shadow);padding:10px 12px;font-size:13px;cursor:pointer;}
+.toast b{display:block;margin-bottom:2px;}
+.toast small{color:var(--ink-soft);}
+.modal.wide{max-width:680px;max-height:92vh;overflow:auto;}
+.ag-rap{display:block;margin-top:3px;padding:4px 8px;border-radius:6px;background:var(--accent-soft);font-size:12px;color:var(--ink);}
+.ag-urg{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:var(--danger);color:#fff;font-size:10px;font-weight:700;letter-spacing:.04em;}
+.ag-cancelled{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:var(--line);color:var(--ink-soft);font-size:10px;font-weight:700;}
+.rp-hint{font-size:12px;color:var(--ink-soft);margin:0 0 10px;line-height:1.5;}
+#rapport-print{display:none;}
+@media print{
+  #toasts{display:none !important;}
+  body.print-rapport .app, body.print-rapport .modal-back{display:none !important;}
+  body.print-rapport #rapport-print{display:block !important;}
+  body.print-rapport, body.print-rapport html{background:#fff !important;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <div class="brand"><img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEA3ADcAAD/2wBDAAIBAQEBAQIBAQECAgICAgQDAgICAgUEBAMEBgUGBgYFBgYGBwkIBgcJBwYGCAsICQoKCgoKBggLDAsKDAkKCgr/2wBDAQICAgICAgUDAwUKBwYHCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgr/wAARCAGNAUQDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD9/KKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKo+IPEmheFdNbV/EOqw2lunWSZsZ9gOrH2GSaAL1FcH4V/aM+HHirW20OO7msZPM228moKI0n6fdOTg5PAbBP1OK7wEMMigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiignAoAKbPPDbQtcXM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" alt="THE HIVE"><span>THE HIVE GESTION</span></div>
+    <div class="tabs">
+      <button class="tab-btn" data-view="editor">Document</button>
+      <button class="tab-btn" data-view="list">Mes documents</button>
+      <button class="tab-btn" data-view="clients">Clients</button>
+      <button class="tab-btn" data-view="compta">Comptabilité</button>
+      <button class="tab-btn" data-view="agenda">Agenda<span class="tab-badge" id="agenda-badge" hidden></span></button>
+      <button class="tab-btn" data-view="parametres">⚙ Paramètres</button>
+    </div>
+    <div class="spacer"></div>
+    <span class="status-pill" id="statusPill">…</span>
+    <span class="status-pill" id="folderPill" title="Dossier de sauvegarde sur cet ordinateur">📁 …</span>
+    <button class="btn btn-sm" id="btn-sync-open">⇄ Synchroniser</button>
+  </div>
+
+  <!-- ===================== EDITOR VIEW ===================== -->
+  <div class="view" id="view-editor">
+    <div class="editor-grid">
+      <!-- FORM -->
+      <div>
+        <div class="panel">
+          <div class="doctype-toggle">
+            <button data-type="devis">Devis</button>
+            <button data-type="facture">Facture</button>
+            <button data-type="avoir" style="display:none;">Avoir</button>
+          </div>
+          <div class="row2" style="margin-top:12px;">
+            <div class="field"><label>Référence</label><input type="text" id="f-ref"></div>
+            <div class="field"><label>Date</label><input type="date" id="f-date"></div>
+          </div>
+          <div class="row2" id="statut-row" style="display:none;">
+            <div class="field"><label>Statut</label>
+              <select id="f-statut"></select>
+            </div>
+            <div class="field" id="statut-date-field" style="display:none;"><label>Date de paiement</label><input type="date" id="f-date-paiement"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>Client</h3>
+          <div class="field">
+            <label>Client existant</label>
+            <select id="f-client-pick"><option value="">— Nouveau client —</option></select>
+          </div>
+          <div class="field"><label>Nom</label><input type="text" id="f-client-nom" placeholder="M./Mme, société…"></div>
+          <div class="row2">
+            <div class="field"><label>Téléphone</label><input type="text" id="f-client-tel"></div>
+            <div class="field"><label>Adresse</label><input type="text" id="f-client-adresse"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>Objet</h3>
+          <div class="field"><label>Objet / intitulé du projet</label><input type="text" id="f-objet" placeholder="Ex : CONSTRUCTION D'UNE VILLA R+1"></div>
+          <div class="field"><label>Site / lieu (optionnel)</label><input type="text" id="f-site"></div>
+        </div>
+
+        <div class="panel">
+          <h3>Prestations</h3>
+          <div id="sections-host"></div>
+          <button class="btn btn-sm" id="btn-add-section">+ Ajouter une section</button>
+          <button class="btn btn-sm" id="btn-add-construction" style="margin-left:8px;" title="Ajoute 2 sections : Main d'œuvre (soumise à la TPS) et Matériaux (hors TPS)">+ Travaux de construction</button>
+          <p style="font-size:11.5px;color:var(--ink-soft);margin:10px 0 0;">Une seule section sans titre = devis simple (pas de sous-total intermédiaire). Plusieurs sections (ou une section titrée) = devis détaillé par lots, numéroté et sous-totalisé. Chaque section a une <b>nature</b> : « Prestation » (main d'œuvre, soumise à la TPS) ou « Fourniture » (matériaux, hors TPS) — le bouton ci-dessus crée directement les deux.</p>
+        </div>
+
+        <div class="panel">
+          <h3>Taxes</h3>
+          <div id="taxes-host"></div>
+          <p style="font-size:11.5px;color:var(--ink-soft);margin:10px 0 0;">Au Gabon, la TPS (9,5%) est une retenue à la source sur les prestations de service non assujetties à la TVA : elle réduit normalement ce que vous encaissez (déduite par défaut ci-dessus), et ne porte que sur les sections marquées « Prestation » — les sections « Fourniture » (matériaux) en sont exclues. La CSS (1%) n'est légalement facturable que si votre chiffre d'affaires annuel dépasse 30 M FCFA — sinon, laissez-la désactivée ; elle porte sur le montant HT total (prestations + fournitures).</p>
+        </div>
+
+        <div class="panel">
+          <h3>Conditions</h3>
+          <div class="field"><label>Modalités de règlement</label><input type="text" id="f-paiement" placeholder="Ex : 70% à la signature, 30% en fin de travaux"></div>
+          <div class="row2">
+            <div class="field"><label>Délai / livraison</label><input type="text" id="f-delai"></div>
+            <div class="field"><label>Validité de l'offre</label><input type="text" id="f-validite" placeholder="Ex : 30 jours"></div>
+          </div>
+          <div class="field"><label>Notes complémentaires</label><textarea id="f-notes" rows="2"></textarea></div>
+        </div>
+
+        <div class="actions-bar">
+          <button class="btn btn-primary" id="btn-save">Enregistrer</button>
+          <label class="auto-toggle" title="Enregistre le document tout seul après chaque modification"><input type="checkbox" id="f-autosave" checked> Enregistrement automatique</label>
+          <span class="save-state" id="save-state" role="status" aria-live="polite"></span>
+          <button class="btn" id="btn-new">Nouveau</button>
+          <button class="btn" id="btn-facturer" style="display:none;">🧾 Créer une facture</button>
+          <button class="btn btn-primary" id="btn-emettre" style="display:none;">✔ Émettre la facture</button>
+          <button class="btn" id="btn-duplicate">Dupliquer</button>
+          <button class="btn btn-danger" id="btn-annuler-fact" style="display:none;">Annuler la facture (avoir)</button>
+          <button class="btn btn-danger" id="btn-delete">Supprimer</button>
+          <button class="btn" id="btn-print">🖨️ Imprimer / PDF</button>
+        </div>
+      </div>
+
+      <!-- PREVIEW -->
+      <div>
+        <div class="preview-wrap">
+          <div id="print-root"><div class="paper" id="paper"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== LIST VIEW ===================== -->
+  <div class="view" id="view-list">
+    <div id="relance-banner" style="display:none;background:#fdf1e0;border:1px solid var(--warn);color:#7a4e0d;border-radius:9px;padding:10px 14px;margin-bottom:12px;font-size:13.5px;">
+      <span id="relance-banner-text"></span>
+    </div>
+    <div class="searchbar">
+      <input type="text" id="list-search" placeholder="Rechercher par client, référence, objet…">
+      <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-soft);white-space:nowrap;">
+        Relance après <input type="number" id="relance-seuil" min="1" step="1" style="width:56px;padding:6px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);"> jours
+      </span>
+    </div>
+    <div class="panel" style="padding:0;overflow-x:auto;">
+      <table class="list-table" id="list-table">
+        <thead><tr><th>Type</th><th>Réf.</th><th>Date</th><th>Client</th><th>Objet</th><th style="text-align:right;">Montant TTC</th><th></th></tr></thead>
+        <tbody id="list-tbody"></tbody>
+      </table>
+      <div class="empty-hint" id="list-empty" style="display:none;">Aucun document pour l'instant. Créez votre premier devis dans l'onglet « Document ».</div>
+    </div>
+  </div>
+
+  <!-- ===================== CLIENTS VIEW ===================== -->
+  <div class="view" id="view-clients">
+    <div class="panel">
+      <h3>Ajouter un client</h3>
+      <div class="row3">
+        <div class="field"><label>Nom</label><input type="text" id="c-nom"></div>
+        <div class="field"><label>Téléphone</label><input type="text" id="c-tel"></div>
+        <div class="field"><label>Adresse</label><input type="text" id="c-adresse"></div>
+      </div>
+      <button class="btn btn-primary btn-sm" id="btn-add-client">Ajouter</button>
+    </div>
+    <div class="panel" style="padding:0;overflow-x:auto;">
+      <table class="list-table" id="clients-table">
+        <thead><tr><th>Nom</th><th>Téléphone</th><th>Adresse</th><th></th></tr></thead>
+        <tbody id="clients-tbody"></tbody>
+      </table>
+      <div class="empty-hint" id="clients-empty" style="display:none;">Aucun client enregistré pour l'instant.</div>
+    </div>
+  </div>
+
+  <!-- ===================== COMPTABILITE VIEW ===================== -->
+  <div class="view" id="view-compta">
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+        <div>
+          <h3 style="margin-bottom:4px;">Chiffre d'affaires encaissé — <span id="compta-annee-label"></span></h3>
+          <p style="font-size:11.5px;color:var(--ink-soft);margin:0;">Basé sur les factures marquées « Payée ». Entreprise individuelle : IRPP (BIC), régime simplifié tant que le CA reste sous les seuils ci-dessous.</p>
+        </div>
+        <select id="compta-annee"></select>
+      </div>
+      <div style="margin-top:14px;">
+        <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px;">
+          <span id="compta-ca-value">0 FCFA</span>
+          <span style="color:var(--ink-soft);">Seuil CSS : 30 M — Seuil TVA : 40 M</span>
+        </div>
+        <div style="height:10px;border-radius:6px;background:var(--accent-soft);overflow:hidden;position:relative;">
+          <div id="compta-ca-bar" style="height:100%;background:var(--accent);width:0%;"></div>
+        </div>
+        <p id="compta-ca-note" style="font-size:11.5px;color:var(--ink-soft);margin:6px 0 0;"></p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Résultat de la période</h3>
+      <div class="row3">
+        <div style="text-align:center;"><div style="font-size:11px;color:var(--ink-soft);">RECETTES ENCAISSÉES</div><div id="compta-recettes" style="font-size:19px;font-weight:800;">0 FCFA</div></div>
+        <div style="text-align:center;"><div style="font-size:11px;color:var(--ink-soft);">DÉPENSES</div><div id="compta-depenses" style="font-size:19px;font-weight:800;">0 FCFA</div></div>
+        <div style="text-align:center;"><div style="font-size:11px;color:var(--ink-soft);">RÉSULTAT NET</div><div id="compta-resultat" style="font-size:19px;font-weight:800;">0 FCFA</div></div>
+      </div>
+      <p style="font-size:11px;color:var(--ink-soft);margin:10px 0 0;">Estimation simplifiée de trésorerie (encaissements − décaissements), pas le bénéfice fiscal officiel : le régime simplifié applique un abattement forfaitaire sur le CA (ex. 40% pour les professions libérales). Rapprochez-vous d'un comptable agréé pour votre déclaration IRPP/ID13.</p>
+    </div>
+
+    <div class="panel">
+      <h3>Retenues &amp; taxes sur les factures encaissées</h3>
+      <div class="row2">
+        <div style="text-align:center;"><div style="font-size:11px;color:var(--ink-soft);">TPS RETENUE (9,5%)</div><div id="compta-tps" style="font-size:17px;font-weight:800;">0 FCFA</div></div>
+        <div style="text-align:center;"><div style="font-size:11px;color:var(--ink-soft);">CSS COLLECTÉE (1%)</div><div id="compta-css" style="font-size:17px;font-weight:800;">0 FCFA</div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Ajouter une dépense</h3>
+      <div class="row3">
+        <div class="field"><label>Date</label><input type="date" id="d-date"></div>
+        <div class="field"><label>Catégorie</label>
+          <select id="d-categorie">
+            <option>Achats &amp; fournitures</option>
+            <option>Sous-traitance</option>
+            <option>Salaires &amp; charges sociales</option>
+            <option>Loyer &amp; charges locatives</option>
+            <option>Transport &amp; déplacement</option>
+            <option>Télécommunications</option>
+            <option>Impôts &amp; taxes (patente, IRPP…)</option>
+            <option>Entretien &amp; réparations</option>
+            <option>Autres charges</option>
+          </select>
+        </div>
+        <div class="field"><label>Montant (FCFA)</label><input type="number" id="d-montant" step="any"></div>
+      </div>
+      <div class="field"><label>Description</label><input type="text" id="d-description" placeholder="Ex : Achat ciment et fer à béton — chantier NKOK"></div>
+      <button class="btn btn-primary btn-sm" id="btn-add-depense">Ajouter la dépense</button>
+    </div>
+
+    <div class="panel" style="padding:0;overflow-x:auto;">
+      <table class="list-table" id="depenses-table">
+        <thead><tr><th>Date</th><th>Catégorie</th><th>Description</th><th style="text-align:right;">Montant</th><th></th></tr></thead>
+        <tbody id="depenses-tbody"></tbody>
+      </table>
+      <div class="empty-hint" id="depenses-empty" style="display:none;">Aucune dépense enregistrée pour cette période.</div>
+    </div>
+
+    <div class="panel">
+      <h3>Échéances fiscales à retenir</h3>
+      <ul style="font-size:13px;color:var(--ink-soft);margin:0;padding-left:20px;line-height:1.7;">
+        <li><b>15 de chaque mois :</b> reversement de la TPS retenue sur les prestations de services du mois précédent.</li>
+        <li><b>20 de chaque mois :</b> déclaration et paiement de la CSS (si assujetti, CA ≥ 30 M FCFA) — même imprimé que la TVA.</li>
+        <li><b>30 avril :</b> déclaration annuelle de revenus et déclaration IRPP (imprimé ID13 en régime simplifié, ID14 en régime réel) pour l'exercice précédent.</li>
+        <li>Patente professionnelle : paiement forfaitaire annuel (montant selon l'activité, généralement dû en début d'année).</li>
+      </ul>
+      <p style="font-size:10.5px;color:var(--ink-soft);margin-top:10px;">Repères généraux issus du Code Général des Impôts gabonais (DGI) — les taux, seuils et échéances évoluent (ex. LFR 2026 sur la facturation électronique) : vérifiez auprès de la DGI ou de votre comptable avant toute déclaration.</p>
+    </div>
+  </div>
+
+  <!-- ===================== PARAMÈTRES VIEW ===================== -->
+  <div class="view" id="view-parametres">
+    <h2 style="margin:0 0 12px;font-size:18px;">Paramètres</h2>
+    <div class="pr-grid">
+      <div>
+        <div class="panel">
+          <h3>Dossier de sauvegarde (sur cet ordinateur)</h3>
+          <div class="pr-state" id="fd-state"></div>
+          <div class="actions-bar" style="margin-top:0;">
+            <button class="btn btn-primary" id="fd-pick">📁 Choisir le dossier…</button>
+            <button class="btn" id="fd-reconnect" style="display:none;">🔓 Reconnecter le dossier</button>
+            <button class="btn" id="fd-now">Enregistrer maintenant</button>
+            <button class="btn" id="fd-load">Recharger depuis le dossier</button>
+            <button class="btn btn-danger" id="fd-off">Déconnecter</button>
+          </div>
+          <p class="pr-note" id="fd-note"></p>
+          <div class="actions-bar"><button class="btn btn-sm" id="fd-download">⬇ Télécharger une copie (fichier .json)</button></div>
+        </div>
+      </div>
+      <div>
+        <div class="panel">
+          <h3>Informations de la société</h3>
+          <div class="field"><label>Logo</label>
+            <div class="logo-box">
+              <div class="logo-prev"><img id="p-logo-img" alt="logo"></div>
+              <div>
+                <input type="file" id="p-logo-file" accept="image/png,image/jpeg,image/svg+xml,image/webp" style="display:none;">
+                <button class="btn btn-sm" id="p-logo-pick">Changer le logo…</button>
+                <button class="btn btn-sm" id="p-logo-reset">Logo d'origine</button>
+                <p class="pr-note" style="margin-top:6px;">PNG, JPG ou SVG. Le logo est réduit automatiquement.</p>
+              </div>
+            </div>
+          </div>
+          <div class="row2">
+            <div class="field"><label>Raison sociale</label><input type="text" id="p-nom"></div>
+            <div class="field"><label>Capital</label><input type="text" id="p-capital" placeholder="Ex : 1 000 000 F CFA"></div>
+          </div>
+          <div class="field"><label>Activité</label><input type="text" id="p-activite"></div>
+          <div class="row2">
+            <div class="field"><label>RCCM</label><input type="text" id="p-rccm"></div>
+            <div class="field"><label>NIF</label><input type="text" id="p-nif"></div>
+          </div>
+          <div class="field"><label>Siège social (adresse)</label><input type="text" id="p-siege"></div>
+          <div class="row2">
+            <div class="field"><label>Boîte postale</label><input type="text" id="p-bp"></div>
+            <div class="field"><label>Ville d'émission des documents</label><input type="text" id="p-ville" placeholder="Ex : Libreville"></div>
+          </div>
+          <div class="row2">
+            <div class="field"><label>Téléphone(s)</label><input type="text" id="p-tel"></div>
+            <div class="field"><label>Email</label><input type="text" id="p-email"></div>
+          </div>
+          <div class="field"><label>Pied de page des documents</label><textarea id="p-pied" rows="2"></textarea></div>
+          <div class="actions-bar" style="margin-top:0;">
+            <button class="btn btn-sm" id="p-pied-gen">Recréer le pied de page à partir des champs</button>
+            <button class="btn btn-sm btn-danger" id="p-reset">Rétablir les valeurs d'origine</button>
+            <span class="save-state" id="p-state"></span>
+          </div>
+          <p class="pr-note">Ces informations s'affichent sur l'en-tête et le pied de page des devis et factures (aperçu et PDF), y compris pour les anciens documents.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== AGENDA VIEW ===================== -->
+  <div class="view" id="view-agenda">
+    <div class="ag-top">
+      <h2 style="margin:0;font-size:18px;">Agenda</h2>
+      <span class="spacer"></span>
+      <button class="btn btn-sm" id="ag-notif-btn">🔔 Activer les notifications</button>
+    </div>
+    <div id="ag-alert"></div>
+    <div class="ag-grid">
+      <div class="panel" id="ag-form">
+        <h3 id="ag-form-title">Nouvelle entrée</h3>
+        <div class="field"><label>Type</label>
+          <select id="a-type">
+            <option value="rdv">Rendez-vous</option>
+            <option value="urgence">Urgence</option>
+            <option value="visite">Visite de site</option>
+            <option value="seance">Séance de travail</option>
+            <option value="admin">Procédure administrative</option>
+            <option value="tache">Tâche à faire</option>
+            <option value="projet">Projet à livrer</option>
+            <option value="client">Client à voir</option>
+            <option value="prospect">Prospect</option>
+          </select>
+        </div>
+        <div class="field"><label id="a-titre-label">Titre</label><input type="text" id="a-titre" list="a-clients-list" placeholder="Ex : Dalle R+1 chantier Oloumi"><datalist id="a-clients-list"></datalist></div>
+        <div class="row2">
+          <div class="field"><label id="a-date-label">Date</label><input type="date" id="a-date"></div>
+          <div class="field"><label>Heure</label><input type="time" id="a-heure"></div>
+        </div>
+        <div class="field"><label>Lieu</label><input type="text" id="a-lieu" placeholder="Ex : bureau, chantier, adresse…"></div>
+        <div class="field"><label>Personnes présentes / participantes</label><input type="text" id="a-presents" placeholder="Ex : M. Ndong (client), Ing. Obame, chef de chantier"></div>
+        <div class="field"><label>Personnes ressources (à contacter)</label><input type="text" id="a-contacts" placeholder="Nom, fonction, téléphone"></div>
+        <div class="field"><label>Rappel</label><select id="a-rappel"></select></div>
+        <div class="field"><label>Notes</label><textarea id="a-notes" rows="2"></textarea></div>
+        <p id="ag-msg" style="font-size:12px;color:var(--danger);margin:0 0 8px;min-height:14px;"></p>
+        <div class="actions-bar" style="margin-top:0;">
+          <button class="btn btn-primary" id="ag-save">Ajouter</button>
+          <button class="btn" id="ag-cancel" style="display:none;">Annuler</button>
+        </div>
+      </div>
+      <div>
+        <div class="ag-chips" id="ag-chips"></div>
+        <div id="ag-list"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<div id="toasts" aria-live="polite"></div>
+
+<div class="modal-back" id="factModal">
+  <div class="modal" style="max-width:480px;">
+    <h4>Créer une facture — <span id="fm-ref"></span></h4>
+    <p class="pr-note" id="fm-info" style="margin:0 0 10px;"></p>
+    <label class="fm-opt" id="fm-o-complete"><input type="radio" name="fm-kind" value="complete"> <span>Facture complète (100 % du devis)</span></label>
+    <label class="fm-opt" id="fm-o-acompte"><input type="radio" name="fm-kind" value="acompte"> <span>Facture d'acompte de</span> <input type="number" id="fm-pct" min="1" max="99" step="1" value="30"> <span>%</span></label>
+    <label class="fm-opt" id="fm-o-solde"><input type="radio" name="fm-kind" value="solde"> <span>Facture de solde (reste à facturer)</span></label>
+    <div class="pr-state" id="fm-prev"></div>
+    <div class="modal-actions"><button class="btn" id="fm-cancel">Annuler</button><button class="btn btn-primary" id="fm-ok">Créer la facture</button></div>
+  </div>
+</div>
+
+<div class="modal-back" id="rapportModal">
+  <div class="modal wide">
+    <h4 id="rp-title">Rapport d'activité</h4>
+    <p class="rp-hint">À remplir une fois le rendez-vous, la visite ou la tâche passé(e). Enregistrer le rapport marque l'entrée comme terminée (ou « non réalisée »).</p>
+    <div class="row2">
+      <div class="field"><label>Résultat</label>
+        <select id="r-resultat">
+          <option value="realise">Réalisé</option>
+          <option value="partiel">Partiellement réalisé</option>
+          <option value="non">Non réalisé / reporté</option>
+        </select>
+      </div>
+      <div class="field"><label>Date de réalisation</label><input type="date" id="r-date"></div>
+    </div>
+    <div class="field"><label>Lieu</label><input type="text" id="r-lieu"></div>
+    <div class="field"><label>Personnes présentes</label><input type="text" id="r-presents" placeholder="Qui était réellement présent ?"></div>
+    <div class="field"><label>Déroulement / résumé (ou motif si non réalisé)</label><textarea id="r-resume" rows="4"></textarea></div>
+    <div class="field"><label>Décisions prises</label><textarea id="r-decisions" rows="3" placeholder="Une décision par ligne"></textarea></div>
+    <div class="field"><label>Actions à mener (qui / quoi / pour quand)</label><textarea id="r-actions" rows="3"></textarea></div>
+    <div class="field"><label>Observations, points bloquants, autres éléments</label><textarea id="r-obs" rows="3"></textarea></div>
+    <div class="field"><label>Prochaine étape / prochain rendez-vous</label><input type="text" id="r-suite"></div>
+    <p id="rp-msg" style="font-size:12px;color:var(--danger);margin:0;min-height:14px;"></p>
+    <div class="modal-actions" style="flex-wrap:wrap;">
+      <button class="btn" id="rp-cancel">Annuler</button>
+      <button class="btn" id="rp-save">Enregistrer</button>
+      <button class="btn btn-primary" id="rp-print">Enregistrer et imprimer / PDF</button>
+    </div>
+  </div>
+</div>
+<div id="rapport-print"></div>
+
+<div class="modal-back" id="confirmModal">
+  <div class="modal">
+    <h4 id="confirmTitle">Confirmer</h4>
+    <p id="confirmMsg" style="color:var(--ink-soft);font-size:13.5px;"></p>
+    <div class="modal-actions">
+      <button class="btn" id="confirmCancel">Annuler</button>
+      <button class="btn btn-danger" id="confirmOk">Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-back" id="syncModal">
+  <div class="modal" style="max-width:460px;">
+    <h4>Synchroniser entre plusieurs postes</h4>
+    <p style="color:var(--ink-soft);font-size:13px;">Si ce site est ouvert sur plusieurs ordinateurs (copie portable hors-ligne), chacun garde ses propres données tant qu'il n'est pas connecté. Pour les faire converger : exportez un fichier sur chaque poste, puis importez chaque fichier sur les autres (ou sur la version en ligne une fois connecté). La fusion garde, pour chaque devis/facture/client/dépense, la version la plus récente.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:14px 0;">
+      <button class="btn btn-primary btn-sm" id="btn-export">⭳ Exporter mes données</button>
+      <button class="btn btn-sm" id="btn-import-trigger">⭱ Importer un fichier</button>
+      <input type="file" id="import-file-input" accept="application/json,.json" style="display:none;">
+    </div>
+    <p id="sync-status" style="font-size:12.5px;min-height:1.4em;"></p>
+    <div class="modal-actions">
+      <button class="btn" id="syncClose">Fermer</button>
+    </div>
+  </div>
+</div>
+<script>
+/* ===================== Nombres en toutes lettres (FR) ===================== */
+function numberToFrenchWords(n){
+  n = Math.round(n);
+  if (n === 0) return "zéro";
+  if (n < 0) return "moins " + numberToFrenchWords(-n);
+  const units = ["", "un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf",
+    "dix", "onze", "douze", "treize", "quatorze", "quinze", "seize",
+    "dix-sept", "dix-huit", "dix-neuf"];
+  const tens = ["", "", "vingt", "trente", "quarante", "cinquante", "soixante", "soixante-dix", "quatre-vingt", "quatre-vingt-dix"];
+  function convertTens(x){
+    if (x < 20) return units[x];
+    const t = Math.floor(x/10), u = x%10;
+    if (t === 7 || t === 9){
+      const base = (t === 7) ? "soixante" : "quatre-vingt";
+      if (t === 7 && u === 1) return base + " et onze";
+      return base + "-" + units[10+u];
+    }
+    if (u === 0){ return (t === 8) ? "quatre-vingts" : tens[t]; }
+    if (u === 1){ return (t === 8) ? "quatre-vingt-un" : tens[t] + " et un"; }
+    return tens[t] + "-" + units[u];
+  }
+  function convertHundreds(x){
+    const h = Math.floor(x/100), rest = x%100;
+    let str = "";
+    if (h > 0){
+      str = (h === 1) ? "cent" : units[h] + " cent";
+      if (h > 1 && rest === 0) str += "s";
+    }
+    if (rest > 0) str += (str ? " " : "") + convertTens(rest);
+    return str || "zéro";
+  }
+  const groups = []; let r = n;
+  while (r > 0){ groups.push(r % 1000); r = Math.floor(r/1000); }
+  const scaleNames = ["", "mille", "million", "milliard"];
+  const parts = [];
+  for (let i = groups.length - 1; i >= 0; i--){
+    const g = groups[i];
+    if (g === 0) continue;
+    const words = convertHundreds(g);
+    if (i === 0) parts.push(words);
+    else if (i === 1) parts.push(g === 1 ? "mille" : words + " mille");
+    else parts.push((g === 1 ? "un " : words + " ") + scaleNames[i] + (g > 1 ? "s" : ""));
+  }
+  return parts.join(" ");
+}
+function fmtFCFA(n){
+  n = Math.round(n||0);
+  return n.toLocaleString("fr-FR").replace(/\u202F/g," ") + " FCFA";
+}
+function uid(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36); }
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function fmtDateFR(iso){
+  if(!iso) return "";
+  const [y,m,d] = iso.split("-");
+  const mois = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+  return `${parseInt(d,10)} ${mois[parseInt(m,10)-1]} ${y}`;
+}
+
+/* ===================== État ===================== */
+function blankDoc(){
+  return {
+    id: null,
+    type: "devis",
+    reference: "",
+    date: todayISO(),
+    statut: "emise",
+    datePaiement: "",
+    client: { nom:"", tel:"", adresse:"" },
+    objet: "",
+    site: "",
+    sections: [ { titre:"", lignes:[ { id:uid(), designation:"", unite:"Unité", qte:1, pu:0 } ] } ],
+    taxes: [
+      { label:"TPS", rate:9.5, sign:-1, enabled:true },
+      { label:"CSS", rate:1, sign:1, enabled:false }
+    ],
+    paiement: "",
+    delai: "",
+    validite: "",
+    notes: "",
+    createdAt: null,
+    updatedAt: null
+  };
+}
+function blankDepense(){
+  return { id:null, date: todayISO(), categorie:"Achats & fournitures", description:"", montant:0 };
+}
+let doc = blankDoc();
+let docList = [];
+let clientList = [];
+let depenseList = [];
+let dbAvailable = false;
+let unsubDocs = null, unsubClients = null, unsubDepenses = null;
+let firstListLoad = true;
+function applyInitialRefIfNeeded(){
+  if (firstListLoad && !doc.id && !doc.reference){
+    doc.reference = suggestRef(doc.type);
+    const el = document.getElementById("f-ref");
+    if (el) el.value = doc.reference;
+  }
+  firstListLoad = false;
+}
+
+/* ===================== Persistance : cloud (db) si dispo, sinon localStorage (mode portable/hors-ligne) ===================== */
+const LS_DOCS = "gestionpme_documents_v1";
+const LS_CLIENTS = "gestionpme_clients_v1";
+const LS_DEPENSES = "gestionpme_depenses_v1";
+function lsGet(key){ try{ return JSON.parse(localStorage.getItem(key)||"[]"); }catch(e){ return []; } }
+function lsSet(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); return true; }catch(e){ return false; } }
+
+async function initDb(){
+  try{
+    if (window.claude && window.claude.use){
+      const db = await window.claude.use("db");
+      if (db){
+        window.__db = db;
+        setStatus(true);
+        unsubDocs = db.collection("documents").orderBy("updatedAt","desc").limit(300).onSnapshot(rows=>{
+          docList = rows.map(r=>({ id:r.id, ...r.data }));
+          applyInitialRefIfNeeded();
+          renderList(); renderCompta();
+        }, err=>{ console.error("docs snapshot", err); });
+        unsubClients = db.collection("clients").orderBy("nom","asc").limit(500).onSnapshot(rows=>{
+          clientList = rows.map(r=>({ id:r.id, ...r.data }));
+          renderClientPicker(); renderClientsTable();
+        }, err=>{ console.error("clients snapshot", err); });
+        unsubDepenses = db.collection("depenses").orderBy("date","desc").limit(1000).onSnapshot(rows=>{
+          depenseList = rows.map(r=>({ id:r.id, ...r.data }));
+          renderCompta();
+        }, err=>{ console.error("depenses snapshot", err); });
+        unsubAgenda = db.collection("agenda").limit(1000).onSnapshot(rows=>{
+          agendaList = rows.map(r=>({ id:r.id, ...r.data }));
+          renderAgenda(); agendaCheck();
+        }, err=>{ console.error("agenda snapshot", err); });
+        return;
+      }
+    }
+  }catch(e){ console.error("initDb", e); }
+  // Repli local : ce fichier ouvert seul (hors ligne / copie portable) fonctionne avec localStorage
+  setStatus(false);
+  docList = lsGet(LS_DOCS);
+  clientList = lsGet(LS_CLIENTS);
+  depenseList = lsGet(LS_DEPENSES);
+  agendaList = lsGet(LS_AGENDA);
+  renderAgenda(); agendaCheck();
+  applyInitialRefIfNeeded();
+  renderList(); renderClientPicker(); renderClientsTable(); renderCompta();
+}
+function setStatus(ok){
+  dbAvailable = ok;
+  const el = document.getElementById("statusPill");
+  if (ok){ el.textContent = "En ligne — synchronisé"; el.className = "status-pill ok"; }
+  else { el.textContent = "Hors ligne — enregistré sur cet appareil"; el.className = "status-pill off"; }
+}
+async function dbSaveDoc(d){
+  const data = { ...d }; delete data.id;
+  data.updatedAt = new Date().toISOString();
+  if (!data.createdAt) data.createdAt = data.updatedAt;
+  d.createdAt = data.createdAt; d.updatedAt = data.updatedAt;
+  if (dbAvailable && window.__db){
+    if (d.id){ await window.__db.collection("documents").doc(d.id).set(data); return d.id; }
+    const ref = await window.__db.collection("documents").add(data);
+    return ref.id;
+  }
+  const id = d.id || uid();
+  const idx = docList.findIndex(x=>x.id===id);
+  const rec = { id, ...data };
+  if (idx>=0) docList[idx] = rec; else docList.unshift(rec);
+  if (!lsSet(LS_DOCS, docList)) throw new Error("Stockage local indisponible");
+  renderList(); renderCompta();
+  return id;
+}
+async function dbDeleteDoc(id){
+  if (!id) return;
+  if (dbAvailable && window.__db){ await window.__db.collection("documents").doc(id).delete(); return; }
+  docList = docList.filter(d=>d.id!==id);
+  lsSet(LS_DOCS, docList);
+  renderList(); renderCompta();
+}
+async function dbSaveClient(c){
+  const data = { nom:c.nom||"", tel:c.tel||"", adresse:c.adresse||"", updatedAt: new Date().toISOString() };
+  if (dbAvailable && window.__db){
+    if (c.id){ await window.__db.collection("clients").doc(c.id).set(data); return c.id; }
+    const ref = await window.__db.collection("clients").add(data);
+    return ref.id;
+  }
+  const id = c.id || uid();
+  const idx = clientList.findIndex(x=>x.id===id);
+  const rec = { id, ...data };
+  if (idx>=0) clientList[idx] = rec; else clientList.push(rec);
+  lsSet(LS_CLIENTS, clientList);
+  renderClientPicker(); renderClientsTable();
+  return id;
+}
+async function dbDeleteClient(id){
+  if (!id) return;
+  if (dbAvailable && window.__db){ await window.__db.collection("clients").doc(id).delete(); return; }
+  clientList = clientList.filter(c=>c.id!==id);
+  lsSet(LS_CLIENTS, clientList);
+  renderClientPicker(); renderClientsTable();
+}
+async function dbSaveDepense(dep){
+  const data = { date:dep.date||todayISO(), categorie:dep.categorie||"Autres charges", description:dep.description||"", montant:parseFloat(dep.montant)||0, updatedAt: new Date().toISOString() };
+  if (dbAvailable && window.__db){
+    if (dep.id){ await window.__db.collection("depenses").doc(dep.id).set(data); return dep.id; }
+    const ref = await window.__db.collection("depenses").add(data);
+    return ref.id;
+  }
+  const id = dep.id || uid();
+  const idx = depenseList.findIndex(x=>x.id===id);
+  const rec = { id, ...data };
+  if (idx>=0) depenseList[idx] = rec; else depenseList.unshift(rec);
+  lsSet(LS_DEPENSES, depenseList);
+  renderCompta();
+  return id;
+}
+async function dbDeleteDepense(id){
+  if (!id) return;
+  if (dbAvailable && window.__db){ await window.__db.collection("depenses").doc(id).delete(); return; }
+  depenseList = depenseList.filter(d=>d.id!==id);
+  lsSet(LS_DEPENSES, depenseList);
+  renderCompta();
+}
+
+/* ===================== Synchronisation entre postes (export / import fusionné) =====================
+   Sert à faire converger plusieurs copies (ex: 3 postes qui travaillent hors-ligne séparément) :
+   chaque poste exporte un fichier .json, on l'importe sur les autres (ou sur la version en ligne
+   une fois connecté) et les enregistrements sont fusionnés par id, en gardant le plus récent. */
+async function exportData(){
+  const payload = buildSnapshot();
+  const json = JSON.stringify(payload, null, 2);
+  const filename = `the-hive-gestion-sync-${todayISO()}.json`;
+  try{
+    if (window.claude && window.claude.use){
+      const downloads = await window.claude.use("downloads");
+      if (downloads){ await downloads.save({ filename, data: json }); return "ok"; }
+    }
+  }catch(e){
+    if (e && e.code === "declined") return "declined";
+    // sinon on retente via le repli navigateur ci-dessous
+  }
+  try{
+    const blob = new Blob([json], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 2000);
+    return "ok";
+  }catch(e){ return "error"; }
+}
+function newer(a, b){ return new Date(a||0).getTime() > new Date(b||0).getTime(); }
+async function mergeImportedData(payload){
+  if (!payload || typeof payload !== "object") throw new Error("format invalide");
+  let added=0, updated=0, unchanged=0;
+  const specs = [
+    { key:"documents", local:()=>docList, save:dbSaveDoc },
+    { key:"clients", local:()=>clientList, save:dbSaveClient },
+    { key:"depenses", local:()=>depenseList, save:dbSaveDepense },
+    { key:"agenda", local:()=>agendaList, save:dbSaveAgenda }
+  ];
+  for (const spec of specs){
+    const incoming = Array.isArray(payload[spec.key]) ? payload[spec.key] : [];
+    for (const rec of incoming){
+      if (!rec || !rec.id) continue;
+      const existing = spec.local().find(x=>x.id===rec.id);
+      if (!existing){ await spec.save(rec); added++; }
+      else if (newer(rec.updatedAt, existing.updatedAt)){ await spec.save(rec); updated++; }
+      else unchanged++;
+    }
+  }
+  if (payload.parametres && typeof payload.parametres === "object"){
+    if (!params.updatedAt || newer(payload.parametres.updatedAt, params.updatedAt)){
+      params = { ...PARAM_DEFAUT, ...payload.parametres }; saveParams(true); applyParams(); updated++;
+    } else unchanged++;
+  }
+  renderList(); renderClientPicker(); renderClientsTable(); renderCompta(); renderAgenda(); agendaCheck();
+  return { added, updated, unchanged };
+}
+function handleImportFile(file){
+  const reader = new FileReader();
+  reader.onload = async e=>{
+    const statusEl = document.getElementById("sync-status");
+    try{
+      const payload = JSON.parse(e.target.result);
+      const r = await mergeImportedData(payload);
+      statusEl.textContent = `Fusion terminée : ${r.added} ajouté(s), ${r.updated} mis à jour, ${r.unchanged} déjà à jour.`;
+      statusEl.style.color = "#2f6b3a";
+    }catch(err){
+      statusEl.textContent = "Fichier illisible ou invalide — vérifiez qu'il s'agit bien d'un export de cet outil.";
+      statusEl.style.color = "var(--danger)";
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* ===================== Calculs ===================== */
+function ligneMontant(l){ return (parseFloat(l.qte)||0) * (parseFloat(l.pu)||0); }
+/* Lignes liées : une ligne « liée » (lie:true, jamais la 1re d'une section) partage l'unité, la quantité
+   et le prix unitaire de la ligne au-dessus. Son montant n'est pas recompté. */
+function isLinked(sec, i){ return i>0 && !!(sec.lignes[i] && sec.lignes[i].lie); }
+function groupHeadIndex(sec, i){ while(i>0 && sec.lignes[i].lie) i--; return i; }
+/* Fin (exclue) du groupe de lignes qui commence à i (tête + lignes liées qui suivent). */
+function groupEnd(sec, i){ let e = i+1; while(e < sec.lignes.length && isLinked(sec, e)) e++; return e; }
+/* Déplace une ligne (dir=-1 monte, +1 descend). Une ligne « tête » emporte ses lignes liées avec elle ;
+   une ligne liée ne bouge qu'entre lignes liées du même groupe. Retourne true si quelque chose a bougé. */
+function canMoveLine(sec, li, dir){
+  const n = sec.lignes.length;
+  if (isLinked(sec, li)) return dir<0 ? (li>0 && isLinked(sec, li-1)) : (li+1<n && isLinked(sec, li+1));
+  return dir<0 ? li>0 : groupEnd(sec, li) < n;
+}
+function moveLine(sec, li, dir){
+  if (!canMoveLine(sec, li, dir)) return false;
+  const L = sec.lignes;
+  if (isLinked(sec, li)){ const j = li+dir; [L[li], L[j]] = [L[j], L[li]]; return true; }
+  const s = li, e = groupEnd(sec, li);
+  if (dir<0){
+    const ps = groupHeadIndex(sec, s-1);
+    const block = L.splice(s, e-s); L.splice(ps, 0, ...block);
+  } else {
+    const ne = groupEnd(sec, e);
+    const block = L.splice(s, e-s); L.splice(s + (ne-e), 0, ...block);
+  }
+  return true;
+}
+function fmtInt(n){ return Math.round(n||0).toLocaleString("fr-FR").replace(/\u202F/g," "); }
+function sectionSubtotal(sec){ return sec.lignes.reduce((s,l,i)=>s+(isLinked(sec,i)?0:ligneMontant(l)),0); }
+function docHT(d){ return d.sections.reduce((s,sec)=>s+sectionSubtotal(sec),0); }
+function docHTPrestations(d){ return d.sections.reduce((s,sec)=>s+(sec.categorie==="fourniture"?0:sectionSubtotal(sec)),0); }
+function docTaxLines(d){
+  const ht = docHT(d);
+  const htPrest = docHTPrestations(d);
+  return (d.taxes||[]).filter(t=>t.enabled).map(t=>{
+    const base = t.label.toUpperCase().includes("TPS") ? htPrest : ht;
+    return { label:t.label, rate:t.rate, sign:t.sign, base,
+      amount: base * (parseFloat(t.rate)||0) / 100 * (t.sign<0?-1:1) };
+  });
+}
+function docTTC(d){
+  const ht = docHT(d);
+  const taxes = docTaxLines(d);
+  return taxes.reduce((s,t)=>s+t.amount, ht);
+}
+function isDetailedMode(d){
+  return d.sections.length > 1 || (d.sections[0] && d.sections[0].titre && d.sections[0].titre.trim() !== "");
+}
+
+/* ===================== Rendu : sections (formulaire) ===================== */
+function renderSections(){
+  const host = document.getElementById("sections-host");
+  host.innerHTML = "";
+  doc.sections.forEach((sec, si)=>{
+    const block = document.createElement("div");
+    block.className = "section-block";
+    block.innerHTML = `
+      <div class="section-block-head">
+        <span class="sec-no" data-secno="${si}"></span>
+        <input type="text" placeholder="Titre de la section (optionnel, ex : GROS ŒUVRE)" value="${escAttr(sec.titre)}" data-act="sec-titre" data-si="${si}">
+        <select data-act="sec-nature" data-si="${si}" title="Nature de la section (base de calcul de la TPS)">
+          <option value="service" ${sec.categorie!=="fourniture"?"selected":""}>Prestation (TPS)</option>
+          <option value="fourniture" ${sec.categorie==="fourniture"?"selected":""}>Fourniture (hors TPS)</option>
+        </select>
+        <span class="mv"><button type="button" data-act="sec-up" data-si="${si}" title="Monter la section" ${si===0?"disabled":""}>▲</button><button type="button" data-act="sec-down" data-si="${si}" title="Descendre la section" ${si===doc.sections.length-1?"disabled":""}>▼</button></span>
+        <button class="btn btn-sm btn-danger" data-act="del-sec" data-si="${si}" title="Supprimer la section">✕</button>
+      </div>
+      <div class="line-head"><span>N°</span><span>Désignation</span><span>Unité</span><span class="r">Qté</span><span class="r">P.U. (FCFA)</span><span class="r">Montant</span><span></span><span></span><span></span></div>
+      <div class="lines-host" data-si="${si}"></div>
+      <button class="btn btn-sm add-row-btn" data-act="add-line" data-si="${si}">+ Ligne</button>
+    `;
+    host.appendChild(block);
+    const linesHost = block.querySelector(".lines-host");
+    sec.lignes.forEach((l, li)=>{
+      const row = document.createElement("div");
+      const linked = isLinked(sec, li);
+      const head = groupHeadIndex(sec, li);
+      row.className = "line-row" + (linked ? " linked" : "");
+      const linkTitle = li===0 ? "La première ligne d'une section ne peut pas être liée"
+        : (linked ? "Dissocier : cette ligne reprend sa propre unité, quantité et prix"
+                  : "Lier à la ligne du dessus : mêmes unité, quantité et prix unitaire");
+      const linkBtn = `<button class="link-row${linked?" on":""}" data-act="toggle-link" data-si="${si}" data-li="${li}" ${li===0?"disabled":""} title="${linkTitle}">🔗</button>`;
+      const numSpan = `<span class="ln" data-ln data-si="${si}" data-li="${li}"></span>`;
+      const mvBtn = `<span class="mv"><button type="button" data-act="line-up" data-si="${si}" data-li="${li}" title="Monter la ligne" ${canMoveLine(sec,li,-1)?"":"disabled"}>▲</button><button type="button" data-act="line-down" data-si="${si}" data-li="${li}" title="Descendre la ligne" ${canMoveLine(sec,li,1)?"":"disabled"}>▼</button></span>`;
+      const delBtn = `<button class="del-row" data-act="del-line" data-si="${si}" data-li="${li}" title="Supprimer">✕</button>`;
+      const desTa = `<textarea placeholder="Désignation…" data-act="l-des" data-si="${si}" data-li="${li}">${escText(l.designation)}</textarea>`;
+      if (linked){
+        row.innerHTML = `${numSpan}${desTa}
+        <div class="linked-note">↳ Lié à la ligne ${head+1} : même unité, qté et P.U.</div>
+        ${mvBtn}${linkBtn}${delBtn}`;
+      } else {
+        row.innerHTML = `${numSpan}${desTa}
+        <input type="text" placeholder="Unité" value="${escAttr(l.unite)}" data-act="l-unite" data-si="${si}" data-li="${li}">
+        <input type="number" step="any" placeholder="Qté" value="${l.qte}" data-act="l-qte" data-si="${si}" data-li="${li}">
+        <input type="number" step="any" placeholder="P.U." value="${l.pu}" data-act="l-pu" data-si="${si}" data-li="${li}">
+        <div class="montant-disp" title="Montant en FCFA">${fmtInt(ligneMontant(l))}</div>
+        ${mvBtn}${linkBtn}${delBtn}`;
+      }
+      linesHost.appendChild(row);
+    });
+  });
+  refreshEditorNums();
+}
+/* Numéros affichés dans l'éditeur : mêmes valeurs que la colonne N° de l'aperçu (1 / 1.1 / 1.2…). */
+function refreshEditorNums(){
+  const det = isDetailedMode(doc);
+  document.querySelectorAll("#sections-host [data-secno]").forEach(el=>{ el.textContent = det ? String(parseInt(el.dataset.secno,10)+1) : ""; });
+  document.querySelectorAll("#sections-host [data-ln]").forEach(el=>{
+    const si = parseInt(el.dataset.si,10), li = parseInt(el.dataset.li,10);
+    el.textContent = det ? (si+1)+"."+(li+1) : String(li+1);
+  });
+}
+function escAttr(s){ return (s||"").replace(/&/g,"&amp;").replace(/"/g,"&quot;"); }
+function escText(s){ return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
+
+/* ===================== Rendu : taxes ===================== */
+function renderTaxes(){
+  const host = document.getElementById("taxes-host");
+  host.innerHTML = "";
+  doc.taxes.forEach((t, ti)=>{
+    const row = document.createElement("div");
+    row.className = "tax-row";
+    row.innerHTML = `
+      <input type="checkbox" ${t.enabled?"checked":""} data-act="tax-on" data-ti="${ti}">
+      <input type="text" value="${escAttr(t.label)}" data-act="tax-label" data-ti="${ti}">
+      <input type="number" step="any" value="${t.rate}" data-act="tax-rate" data-ti="${ti}"> %
+      <select data-act="tax-sign" data-ti="${ti}">
+        <option value="1" ${t.sign>0?"selected":""}>Ajoutée</option>
+        <option value="-1" ${t.sign<0?"selected":""}>Déduite</option>
+      </select>
+      <span style="flex:1;"></span>
+      <button class="btn btn-sm btn-ghost" data-act="del-tax" data-ti="${ti}">✕</button>
+    `;
+    host.appendChild(row);
+  });
+  const addBtn = document.createElement("button");
+  addBtn.className = "btn btn-sm"; addBtn.textContent = "+ Ajouter une taxe";
+  addBtn.onclick = ()=>{ doc.taxes.push({label:"Taxe",rate:0,sign:1,enabled:true}); renderTaxes(); renderPreview(); };
+  host.appendChild(addBtn);
+}
+
+/* ===================== Rendu : aperçu / papier ===================== */
+function renderPreview(){
+  markDirty();
+  const d = doc;
+  const detailed = isDetailedMode(d);
+  const ht = docHT(d);
+  const taxLines = docTaxLines(d);
+  const ttc = docTTC(d);
+  let rowsHtml = "";
+  let secCounter = 0;
+  d.sections.forEach(sec=>{
+    secCounter++;
+    if (detailed){
+      rowsHtml += `<tr class="sec-title"><td class="center">${secCounter}</td><td colspan="5">${escText(sec.titre||("Section "+secCounter))}</td></tr>`;
+    }
+    sec.lignes.forEach((l, li)=>{
+      const num = detailed ? `${secCounter}.${li+1}` : `${li+1}`;
+      let cells = "";
+      if (!isLinked(sec, li)){
+        // lignes liées juste en dessous : les 4 cellules chiffrées sont fusionnées (un seul prix pour le groupe)
+        let n = 1;
+        while (li+n < sec.lignes.length && isLinked(sec, li+n)) n++;
+        const rs = n>1 ? ` rowspan="${n}"` : "", mc = n>1 ? " merged" : "";
+        cells = `<td class="center${mc}"${rs}>${escText(l.unite)}</td>
+        <td class="num${mc}"${rs}>${fmtNum(l.qte)}</td>
+        <td class="num${mc}"${rs}>${fmtInt(l.pu)}</td>
+        <td class="num${mc}"${rs}>${fmtInt(ligneMontant(l))}</td>`;
+      }
+      rowsHtml += `<tr>
+        <td class="center">${num}</td>
+        <td>${escText(l.designation).replace(/\n/g,"<br>")}</td>
+        ${cells}
+      </tr>`;
+    });
+    if (detailed){
+      rowsHtml += `<tr class="sec-sub"><td colspan="5">SOUS-TOTAL ${escText(sec.titre||("SECTION "+secCounter))}</td><td class="num">${fmtInt(sectionSubtotal(sec))}</td></tr>`;
+    }
+  });
+
+  const totBoxRows = [
+    `<div><span>Montant HT</span><span>${fmtFCFA(ht)}</span></div>`,
+    ...taxLines.map(t=>`<div><span>${escText(t.label)} (${t.rate}%${t.sign<0?" — retenue":""}${t.base<ht?" sur main d'œuvre":""})</span><span>${fmtFCFA(t.amount)}</span></div>`),
+    `<div><span>${d.type==="facture"?"NET À PAYER":d.type==="avoir"?"MONTANT DE L'AVOIR":"MONTANT TTC"}</span><span>${fmtFCFA(ttc)}</span></div>`
+  ].join("");
+
+  const html = `
+    <div class="paper-head">
+      <img src="${document.querySelector('.brand img').src}" alt="logo">
+      <div class="ident">${companyIdentHtml()}</div>
+    </div>
+    <div class="paper-title">${docTitleHtml(d)}</div>
+    <div class="paper-meta">
+      <div class="block">
+        <b>Client</b>${escText(d.client.nom)||"—"}<br>
+        ${d.client.tel?("Tél : "+escText(d.client.tel)+"<br>"):""}
+        ${d.client.adresse?("Adresse : "+escText(d.client.adresse)):""}
+      </div>
+      <div class="block" style="text-align:right;">
+        <b>Réf.</b>${escText(d.reference)||(d.type==="facture"&&d.statut==="brouillon"?"BROUILLON":"—")}<br>
+        Fait${params.ville?" à "+escText(params.ville):""}, le ${fmtDateFR(d.date)}
+      </div>
+    </div>
+    ${d.objet?`<div class="paper-obj">Objet : ${escText(d.objet)}${d.site?(" — Site : "+escText(d.site)):""}</div>`:""}
+    ${docLienHtml(d)}
+    <table class="paper-table">
+      <thead><tr><th style="width:40px;">N°</th><th>Désignation</th><th style="width:56px;">Unité</th><th style="width:64px;text-align:right;">Qté</th><th style="width:100px;text-align:right;">P.U. (FCFA)</th><th style="width:112px;text-align:right;">Montant (FCFA)</th></tr></thead>
+      <tbody>
+        ${rowsHtml}
+        <tr class="grand-total"><td colspan="5">TOTAL HT</td><td class="num">${fmtInt(ht)}</td></tr>
+      </tbody>
+    </table>
+    <div class="paper-arrete">
+      Arrêté${d.type==="facture"?"e la présente facture":d.type==="avoir"?" le présent avoir":" le présent devis"} à la somme de :
+      <div class="cadre">${numberToFrenchWords(Math.abs(ttc))} francs CFA</div>
+    </div>
+    <div class="paper-terms">
+      <div style="max-width:300px;">
+        ${d.paiement?`<div><b>Règlement :</b> ${escText(d.paiement)}</div>`:""}
+        ${d.delai?`<div><b>Délai :</b> ${escText(d.delai)}</div>`:""}
+        ${d.validite && d.type==="devis"?`<div><b>Validité de l'offre :</b> ${escText(d.validite)}</div>`:""}
+        ${d.notes?`<div style="margin-top:6px;">${escText(d.notes).replace(/\n/g,"<br>")}</div>`:""}
+      </div>
+      <div class="totbox">${totBoxRows}</div>
+    </div>
+    <div class="paper-sign">
+      <div>La Direction<div class="line"></div></div>
+      <div>${d.type!=="devis"?"Le Client":"Bon pour accord du client"}<div class="line"></div></div>
+    </div>
+    <div class="paper-foot">
+      ${escText(params.pied).replace(/\n/g,"<br>")}
+    </div>
+  `;
+  document.getElementById("paper").innerHTML = html;
+}
+function fmtNum(n){
+  n = parseFloat(n)||0;
+  return (Math.round(n*100)/100).toLocaleString("fr-FR");
+}
+
+/* ===================== Formulaire <-> état ===================== */
+function loadFormFromDoc(){
+  loadingForm = true; autosaveDirty = false; clearTimeout(autosaveTimer);
+  document.querySelectorAll(".doctype-toggle button").forEach(b=>b.classList.toggle("active", b.dataset.type===doc.type));
+  document.getElementById("f-ref").value = doc.reference;
+  document.getElementById("f-date").value = doc.date;
+  if (!doc.statut) doc.statut = "emise";
+  fillStatutOptions();
+  document.getElementById("f-date-paiement").value = doc.datePaiement || todayISO();
+  updateStatutVisibility();
+  document.getElementById("f-client-nom").value = doc.client.nom;
+  document.getElementById("f-client-tel").value = doc.client.tel;
+  document.getElementById("f-client-adresse").value = doc.client.adresse;
+  document.getElementById("f-objet").value = doc.objet;
+  document.getElementById("f-site").value = doc.site;
+  document.getElementById("f-paiement").value = doc.paiement;
+  document.getElementById("f-delai").value = doc.delai;
+  document.getElementById("f-validite").value = doc.validite;
+  document.getElementById("f-notes").value = doc.notes;
+  renderSections(); renderTaxes(); renderPreview();
+  loadingForm = false;
+  setSaveState(autosaveOn ? "Enregistrement automatique activé" : "Enregistrement manuel", "");
+}
+function updateStatutVisibility(){
+  document.getElementById("statut-row").style.display = doc.type === "facture" ? "grid" : "none";
+  document.getElementById("statut-date-field").style.display = doc.statut === "payee" ? "block" : "none";
+  fillStatutOptions(); updateActionButtons();
+}
+function fillStatutOptions(){
+  const sel = document.getElementById("f-statut"), s = doc.statut || "emise";
+  const opts = s==="brouillon" ? [["brouillon","Brouillon (sans numéro)"],["emise","Émise (non payée)"],["payee","Payée"]]
+    : s==="annulee" ? [["annulee","Annulée"+(doc.avoirRef?" (avoir "+doc.avoirRef+")":"")]]
+    : [["emise","Émise (non payée)"],["payee","Payée"]];
+  sel.innerHTML = opts.map(o=>`<option value="${o[0]}">${escText(o[1])}</option>`).join("");
+  sel.value = s; sel.disabled = s==="annulee";
+}
+function updateActionButtons(){
+  const t = doc.type, s = doc.statut || "emise", saved = !!doc.id;
+  const show = (id,v)=>{ document.getElementById(id).style.display = v ? "" : "none"; };
+  show("btn-facturer", t==="devis");
+  show("btn-emettre", t==="facture" && s==="brouillon");
+  show("btn-annuler-fact", t==="facture" && (s==="emise"||s==="payee") && saved);
+  show("btn-duplicate", t!=="avoir");
+  const locked = saved && ((t==="facture" && s!=="brouillon") || t==="avoir");
+  const del = document.getElementById("btn-delete");
+  del.disabled = locked;
+  del.title = locked ? (t==="avoir" ? "Un avoir ne se supprime pas." : "Une facture émise ne se supprime pas : utilisez « Annuler la facture (avoir) ».") : "";
+  document.querySelector(".doctype-toggle").classList.toggle("locked", saved || t==="avoir");
+  document.querySelector('.doctype-toggle button[data-type="avoir"]').style.display = t==="avoir" ? "" : "none";
+  document.getElementById("f-ref").placeholder = (t==="facture" && s==="brouillon") ? "Attribué à l'émission" : "";
+}
+function bindSimpleField(id, path){
+  document.getElementById(id).addEventListener("input", e=>{
+    setPath(doc, path, e.target.value); renderPreview();
+  });
+}
+function setPath(obj, path, val){
+  const parts = path.split(".");
+  let o = obj;
+  for (let i=0;i<parts.length-1;i++) o = o[parts[i]];
+  o[parts[parts.length-1]] = val;
+}
+
+/* ===================== Vues ===================== */
+function showView(name){
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+  document.querySelectorAll(".tab-btn").forEach(b=>b.classList.toggle("active", b.dataset.view===name));
+  document.getElementById("view-"+name).classList.add("active");
+  if (name === "list") renderList();
+  if (name === "clients") renderClientsTable();
+  if (name === "compta") renderCompta();
+  if (name === "agenda") renderAgenda();
+  if (name === "parametres") renderParametres();
+}
+
+/* ===================== Liste des documents & relances de paiement ===================== */
+const LS_SEUIL_RELANCE = "gestionpme_seuil_relance_v1";
+function getSeuilRelance(){ const v = parseInt(localStorage.getItem(LS_SEUIL_RELANCE),10); return (v>0) ? v : 30; }
+function setSeuilRelance(v){ try{ localStorage.setItem(LS_SEUIL_RELANCE, String(v)); }catch(e){} }
+function joursDepuis(dateISO){ return Math.floor((new Date(todayISO()) - new Date(dateISO)) / 86400000); }
+function renderList(){
+  const q = (document.getElementById("list-search").value||"").toLowerCase();
+  const tbody = document.getElementById("list-tbody");
+  tbody.innerHTML = "";
+  const seuil = getSeuilRelance();
+  document.getElementById("relance-seuil").value = seuil;
+  const filtered = docList.filter(d=>{
+    if (!q) return true;
+    return [d.reference,d.objet,d.client&&d.client.nom].join(" ").toLowerCase().includes(q);
+  });
+  document.getElementById("list-empty").style.display = filtered.length ? "none" : "block";
+
+  const impayeesEnRetard = docList.filter(d=> isImpayee(d) && joursDepuis(d.date) >= seuil);
+  const banner = document.getElementById("relance-banner");
+  if (impayeesEnRetard.length){
+    const total = impayeesEnRetard.reduce((s,d)=>s+docTTC(d),0);
+    document.getElementById("relance-banner-text").textContent =
+      `⚠ ${impayeesEnRetard.length} facture(s) impayée(s) depuis ${seuil}+ jours — ${fmtFCFA(total)} à relancer`;
+    banner.style.display = "flex";
+  } else banner.style.display = "none";
+
+  filtered.slice().sort((a,b)=>{
+    const ra = isImpayee(a) && joursDepuis(a.date)>=seuil;
+    const rb = isImpayee(b) && joursDepuis(b.date)>=seuil;
+    if (ra!==rb) return ra ? -1 : 1;
+    return 0;
+  }).forEach(d=>{
+    const tr = document.createElement("tr");
+    const paye = d.type==="facture" && d.statut==="payee";
+    const enRetard = d.type==="facture" && !paye && joursDepuis(d.date) >= seuil;
+    const statutBadge = listStatutBadge(d, seuil);
+    tr.innerHTML = `
+      <td><span class="badge ${d.type}">${({facture:"Facture",avoir:"Avoir"})[d.type]||"Devis"}</span>${statutBadge}</td>
+      <td>${escText(d.reference)||"—"}</td>
+      <td>${fmtDateFR(d.date)}</td>
+      <td>${escText(d.client&&d.client.nom)||"—"}</td>
+      <td>${escText(d.objet)||"—"}</td>
+      <td style="text-align:right;">${fmtFCFA(docTTC(d))}</td>
+      <td class="row-actions">
+        ${isImpayee(d) ? `<button class="btn btn-sm" data-act="mark-paid" data-id="${d.id}">Marquer payée</button>` : ""}
+        ${d.type==="devis" ? `<button class="btn btn-sm" data-act="facturer" data-id="${d.id}">Facturer</button>` : ""}
+        <button class="btn btn-sm" data-act="open-doc" data-id="${d.id}">Ouvrir</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+/* ===================== Clients ===================== */
+function renderClientPicker(){
+  const sel = document.getElementById("f-client-pick");
+  const current = sel.value;
+  sel.innerHTML = '<option value="">— Nouveau client —</option>' +
+    clientList.map(c=>`<option value="${c.id}">${escAttr(c.nom)}</option>`).join("");
+  sel.value = current;
+}
+function renderClientsTable(){
+  const tbody = document.getElementById("clients-tbody");
+  tbody.innerHTML = "";
+  document.getElementById("clients-empty").style.display = clientList.length ? "none" : "block";
+  clientList.forEach(c=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${escText(c.nom)}</td><td>${escText(c.tel)}</td><td>${escText(c.adresse)}</td>
+      <td class="row-actions"><button class="btn btn-sm btn-danger" data-act="del-client" data-id="${c.id}">Supprimer</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+/* ===================== Comptabilité ===================== */
+function comptaAnnees(){
+  const years = new Set([new Date().getFullYear()]);
+  docList.forEach(d=>{ if (d.type==="facture" && d.statut==="payee" && d.datePaiement) years.add(parseInt(d.datePaiement.slice(0,4),10)); });
+  depenseList.forEach(d=>{ if (d.date) years.add(parseInt(d.date.slice(0,4),10)); });
+  return Array.from(years).sort((a,b)=>b-a);
+}
+function renderCompta(){
+  const sel = document.getElementById("compta-annee");
+  const years = comptaAnnees();
+  const prevVal = sel.value ? parseInt(sel.value,10) : new Date().getFullYear();
+  sel.innerHTML = years.map(y=>`<option value="${y}">${y}</option>`).join("");
+  sel.value = years.includes(prevVal) ? String(prevVal) : String(years[0]);
+  const year = parseInt(sel.value,10);
+  document.getElementById("compta-annee-label").textContent = year;
+
+  const facturesPayees = docList.filter(d=>d.type==="facture" && d.statut==="payee" && d.datePaiement && d.datePaiement.slice(0,4)===String(year));
+  const caHT = facturesPayees.reduce((s,d)=>s+docHT(d),0);
+  const recettes = facturesPayees.reduce((s,d)=>s+docTTC(d),0);
+  const tpsTotal = facturesPayees.reduce((s,d)=>{
+    const t = docTaxLines(d).find(t=>t.label.toUpperCase().includes("TPS"));
+    return s + (t ? Math.abs(t.amount) : 0);
+  },0);
+  const cssTotal = facturesPayees.reduce((s,d)=>{
+    const t = docTaxLines(d).find(t=>t.label.toUpperCase().includes("CSS"));
+    return s + (t ? Math.abs(t.amount) : 0);
+  },0);
+
+  const depensesAnnee = depenseList.filter(d=>d.date && d.date.slice(0,4)===String(year));
+  const totalDepenses = depensesAnnee.reduce((s,d)=>s+(parseFloat(d.montant)||0),0);
+
+  document.getElementById("compta-ca-value").textContent = fmtFCFA(caHT) + " HT encaissé";
+  const pct = Math.min(100, caHT/40000000*100);
+  document.getElementById("compta-ca-bar").style.width = pct + "%";
+  document.getElementById("compta-ca-bar").style.background = caHT >= 40000000 ? "var(--danger)" : (caHT >= 30000000 ? "var(--warn)" : "var(--accent)");
+  let note = "Sous les deux seuils : ni CSS, ni TVA à appliquer.";
+  if (caHT >= 40000000) note = "CA ≥ 40 M FCFA : l'assujettissement à la TVA (18%) devient à vérifier avec la DGI.";
+  else if (caHT >= 30000000) note = "CA ≥ 30 M FCFA : la CSS (1%) devient légalement facturable.";
+  document.getElementById("compta-ca-note").textContent = note;
+
+  document.getElementById("compta-recettes").textContent = fmtFCFA(recettes);
+  document.getElementById("compta-depenses").textContent = fmtFCFA(totalDepenses);
+  document.getElementById("compta-resultat").textContent = fmtFCFA(recettes - totalDepenses);
+  document.getElementById("compta-tps").textContent = fmtFCFA(tpsTotal);
+  document.getElementById("compta-css").textContent = fmtFCFA(cssTotal);
+
+  const tbody = document.getElementById("depenses-tbody");
+  tbody.innerHTML = "";
+  document.getElementById("depenses-empty").style.display = depensesAnnee.length ? "none" : "block";
+  depensesAnnee.forEach(d=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${fmtDateFR(d.date)}</td><td>${escText(d.categorie)}</td><td>${escText(d.description)}</td>
+      <td style="text-align:right;">${fmtFCFA(d.montant)}</td>
+      <td class="row-actions"><button class="btn btn-sm btn-danger" data-act="del-depense" data-id="${d.id}">Supprimer</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+/* ===================== Confirm modal ===================== */
+function confirmAction(title, msg){
+  return new Promise(resolve=>{
+    document.getElementById("confirmTitle").textContent = title;
+    document.getElementById("confirmMsg").textContent = msg;
+    const back = document.getElementById("confirmModal");
+    back.classList.add("show");
+    function cleanup(v){ back.classList.remove("show"); ok.onclick=null; cancel.onclick=null; resolve(v); }
+    const ok = document.getElementById("confirmOk"), cancel = document.getElementById("confirmCancel");
+    ok.onclick = ()=>cleanup(true);
+    cancel.onclick = ()=>cleanup(false);
+  });
+}
+
+/* ===================== Actions principales ===================== */
+/* ===================== Enregistrement automatique =====================
+   Chaque modification (champ, ligne, taxe, statut…) relance un minuteur ; 1,2 s après la dernière frappe,
+   le document est enregistré (même chemin que le bouton « Enregistrer »). Un document vide n'est pas créé.
+   Les enregistrements sont mis en file pour ne jamais créer deux fois le même document. */
+const LS_AUTOSAVE = "gestionpme_autosave_v1";
+let autosaveOn = true;
+try{ autosaveOn = localStorage.getItem(LS_AUTOSAVE) !== "off"; }catch(e){}
+let autosaveTimer = null, autosaveDirty = false, loadingForm = false, saveChain = Promise.resolve();
+function setSaveState(txt, cls){
+  const el = document.getElementById("save-state");
+  if (el){ el.textContent = txt; el.className = "save-state" + (cls ? " "+cls : ""); }
+}
+function docHasContent(d){
+  return !!(d.client.nom || d.objet || d.site || d.sections.some(sec=>sec.lignes.some(l=>l.designation || (parseFloat(l.pu)||0)>0)));
+}
+function markDirty(){
+  if (loadingForm) return;
+  autosaveDirty = true;
+  clearTimeout(autosaveTimer);
+  if (!autosaveOn){ setSaveState("Modifications non enregistrées", "warn"); return; }
+  setSaveState("Modification en cours…", "");
+  autosaveTimer = setTimeout(()=>{ saveNow(true); }, 1200);
+}
+async function saveCore(target){
+  if (!target.reference && !(target.type==="facture" && target.statut==="brouillon")){
+    target.reference = suggestRef(target.type);
+    if (target===doc){ const el = document.getElementById("f-ref"); if (el) el.value = target.reference; }
+  }
+  const id = await dbSaveDoc(target);
+  target.id = id;
+}
+function saveNow(auto){
+  clearTimeout(autosaveTimer);
+  const target = doc;
+  saveChain = saveChain.then(async ()=>{
+    if (auto && !(target.id || docHasContent(target))){ autosaveDirty = false; setSaveState("", ""); return; }
+    autosaveDirty = false;
+    try{
+      await saveCore(target);
+      const hm = new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+      setSaveState("✓ Enregistré à " + hm, "ok");
+    }catch(e){
+      autosaveDirty = true;
+      console.error("enregistrement", e);
+      setSaveState("⚠ Échec de l'enregistrement — vérifiez l'espace du navigateur", "warn");
+    }
+  });
+  return saveChain;
+}
+/* À appeler avant de changer de document : termine l'enregistrement en cours. */
+async function flushPending(){
+  if (autosaveOn && autosaveDirty) await saveNow(true); else await saveChain;
+}
+function actionSave(){ return saveNow(false); }
+document.addEventListener("visibilitychange", ()=>{ if (document.visibilityState==="hidden" && autosaveOn && autosaveDirty) saveNow(true); });
+window.addEventListener("pagehide", ()=>{
+  if (autosaveOn && autosaveDirty && (doc.id || docHasContent(doc))){ clearTimeout(autosaveTimer); saveCore(doc).catch(()=>{}); }
+});
+/* Numérotation automatique : préfixe par type + année + compteur séquentiel
+   sans collision (relit le plus grand numéro déjà utilisé cette année pour ce type). */
+function suggestRef(type){
+  const year = new Date().getFullYear();
+  const prefix = ({facture:"FA", avoir:"AV"})[type] || "DQ";
+  const re = new RegExp("^" + prefix + "-" + year + "-(\\d+)$");
+  let maxN = 0;
+  docList.forEach(d=>{
+    const m = (d.reference || "").match(re);
+    if (m) maxN = Math.max(maxN, parseInt(m[1], 10));
+  });
+  return prefix + "-" + year + "-" + String(maxN + 1).padStart(3, "0");
+}
+async function actionNew(){
+  await flushPending();
+  doc = blankDoc();
+  doc.reference = suggestRef(doc.type);
+  loadFormFromDoc();
+}
+async function actionDuplicate(){
+  await flushPending();
+  doc = { ...JSON.parse(JSON.stringify(doc)), id:null, createdAt:null, updatedAt:null };
+  if (doc.type==="facture"){ doc.statut = "brouillon"; doc.reference = ""; doc.datePaiement = ""; delete doc.lien; delete doc.avoirRef; delete doc.annuleLe; }
+  else doc.reference = suggestRef(doc.type);
+  doc.sections.forEach(s=>s.lignes.forEach(l=>l.id=uid()));
+  loadFormFromDoc();
+}
+async function actionDelete(){
+  if (doc.id && ((doc.type==="facture" && (doc.statut||"emise")!=="brouillon") || doc.type==="avoir")){
+    showToast("Suppression impossible", "Une facture émise ou un avoir ne se supprime pas : annulez la facture, un avoir est alors créé.", "#c0392b"); return;
+  }
+  if (doc.id && doc.type==="devis" && docList.some(x=>x.type==="facture" && x.lien && x.lien.devisId===doc.id && (x.statut||"emise")!=="brouillon")){
+    showToast("Suppression impossible", "Ce devis a déjà donné lieu à une facture émise.", "#c0392b"); return;
+  }
+  if (!doc.id) { clearTimeout(autosaveTimer); autosaveDirty = false; actionNew(); return; }
+  const ok = await confirmAction("Supprimer ce document ?", "Cette action est définitive.");
+  if (!ok) return;
+  clearTimeout(autosaveTimer); autosaveDirty = false; await saveChain;
+  await dbDeleteDoc(doc.id);
+  docList = docList.filter(d=>d.id!==doc.id);
+  renderList();
+  actionNew();
+}
+async function openDoc(id){
+  await flushPending();
+  const found = docList.find(d=>d.id===id);
+  if (!found) return;
+  doc = JSON.parse(JSON.stringify(found));
+  if (!doc.taxes) doc.taxes = blankDoc().taxes;
+  loadFormFromDoc();
+  showView("editor");
+}
+
+/* ===================== Délégation d'événements ===================== */
+document.addEventListener("input", e=>{
+  const t = e.target, act = t.dataset.act;
+  if (!act) return;
+  if (act==="sec-titre"){ doc.sections[t.dataset.si].titre = t.value; renderPreview(); refreshEditorNums(); }
+  if (act==="l-des"){ doc.sections[t.dataset.si].lignes[t.dataset.li].designation = t.value; renderPreview(); }
+  if (act==="l-unite"){ doc.sections[t.dataset.si].lignes[t.dataset.li].unite = t.value; renderPreview(); }
+  if (act==="l-qte"){ doc.sections[t.dataset.si].lignes[t.dataset.li].qte = t.value; renderRowMontant(t); renderPreview(); }
+  if (act==="l-pu"){ doc.sections[t.dataset.si].lignes[t.dataset.li].pu = t.value; renderRowMontant(t); renderPreview(); }
+  if (act==="tax-label"){ doc.taxes[t.dataset.ti].label = t.value; renderPreview(); }
+  if (act==="tax-rate"){ doc.taxes[t.dataset.ti].rate = parseFloat(t.value)||0; renderPreview(); }
+});
+function renderRowMontant(inputEl){
+  const row = inputEl.closest(".line-row");
+  const si = inputEl.dataset.si, li = inputEl.dataset.li;
+  const l = doc.sections[si].lignes[li];
+  const md = row.querySelector(".montant-disp"); if (md) md.textContent = fmtInt(ligneMontant(l));
+}
+document.addEventListener("change", e=>{
+  const t = e.target, act = t.dataset.act;
+  if (!act) return;
+  if (act==="tax-on"){ doc.taxes[t.dataset.ti].enabled = t.checked; renderPreview(); }
+  if (act==="tax-sign"){ doc.taxes[t.dataset.ti].sign = parseInt(t.value,10); renderPreview(); }
+  if (act==="sec-nature"){ doc.sections[t.dataset.si].categorie = t.value; renderPreview(); }
+});
+document.addEventListener("click", async e=>{
+  const t = e.target.closest("[data-act]");
+  if (!t) return;
+  const act = t.dataset.act;
+  if (act==="add-line"){ doc.sections[t.dataset.si].lignes.push({id:uid(),designation:"",unite:"Unité",qte:1,pu:0}); renderSections(); renderPreview(); }
+  if (act==="toggle-link"){
+    const sec = doc.sections[t.dataset.si], li = parseInt(t.dataset.li,10);
+    if (li>0){ sec.lignes[li].lie = !sec.lignes[li].lie; renderSections(); renderPreview(); }
+  }
+  if (act==="del-line"){
+    const sec = doc.sections[t.dataset.si], li = parseInt(t.dataset.li,10), l = sec.lignes[li], next = sec.lignes[li+1];
+    // on supprime la ligne « tête » d'un groupe : la ligne liée suivante reprend unité, qté et P.U.
+    if (!isLinked(sec, li) && next && next.lie){ next.unite = l.unite; next.qte = l.qte; next.pu = l.pu; next.lie = false; }
+    sec.lignes.splice(li,1);
+    if (sec.lignes.length===0) sec.lignes.push({id:uid(),designation:"",unite:"Unité",qte:1,pu:0});
+    renderSections(); renderPreview();
+  }
+  if (act==="line-up" || act==="line-down"){
+    const sec = doc.sections[t.dataset.si], li = parseInt(t.dataset.li,10);
+    if (moveLine(sec, li, act==="line-up" ? -1 : 1)){ renderSections(); renderPreview(); }
+  }
+  if (act==="sec-up" || act==="sec-down"){
+    const S = doc.sections, si = parseInt(t.dataset.si,10), sj = si + (act==="sec-up" ? -1 : 1);
+    if (sj>=0 && sj<S.length){ [S[si], S[sj]] = [S[sj], S[si]]; renderSections(); renderPreview(); }
+  }
+  if (act==="del-sec"){ if (doc.sections.length>1){ doc.sections.splice(t.dataset.si,1); renderSections(); renderPreview(); } }
+  if (act==="del-tax"){ doc.taxes.splice(t.dataset.ti,1); renderTaxes(); renderPreview(); }
+  if (act==="open-doc"){ openDoc(t.dataset.id); }
+  if (act==="facturer"){ const dv = docList.find(x=>x.id===t.dataset.id); if (dv) openFacturerModal(dv); }
+  if (act==="mark-paid"){
+    const d = docList.find(x=>x.id===t.dataset.id);
+    if (d){ d.statut = "payee"; d.datePaiement = todayISO(); await dbSaveDoc(d); }
+  }
+  if (act==="del-depense"){
+    const ok = await confirmAction("Supprimer cette dépense ?", "Cette action est définitive.");
+    if (ok) await dbDeleteDepense(t.dataset.id);
+  }
+  if (act==="del-client"){
+    const ok = await confirmAction("Supprimer ce client ?", "Cette action est définitive.");
+    if (ok){ await dbDeleteClient(t.dataset.id); clientList = clientList.filter(c=>c.id!==t.dataset.id); renderClientPicker(); renderClientsTable(); }
+  }
+});
+document.getElementById("btn-add-section").onclick = ()=>{ doc.sections.push({titre:"",lignes:[{id:uid(),designation:"",unite:"Unité",qte:1,pu:0}]}); renderSections(); renderPreview(); };
+document.getElementById("btn-add-construction").onclick = ()=>{
+  doc.sections.push({titre:"Main d'œuvre", categorie:"service", lignes:[{id:uid(),designation:"",unite:"Forfait",qte:1,pu:0}]});
+  doc.sections.push({titre:"Matériaux & fournitures", categorie:"fourniture", lignes:[{id:uid(),designation:"",unite:"Unité",qte:1,pu:0}]});
+  renderSections(); renderPreview();
+};
+document.querySelectorAll(".doctype-toggle button").forEach(b=>{
+  b.onclick = ()=>{
+    const oldAuto = suggestRefLike(doc.type, doc.reference);
+    doc.type = b.dataset.type;
+    document.querySelectorAll(".doctype-toggle button").forEach(x=>x.classList.toggle("active",x===b));
+    // Ne régénère la référence que si le document est nouveau et que la réf n'a pas été personnalisée
+    if (!doc.id){
+      if (doc.type==="facture"){ doc.statut = "brouillon"; if (!doc.reference || oldAuto) doc.reference = ""; }
+      else { if (doc.statut==="brouillon") doc.statut = "emise"; if (!doc.reference || oldAuto) doc.reference = suggestRef(doc.type); }
+      document.getElementById("f-ref").value = doc.reference;
+    }
+    updateStatutVisibility();
+    renderPreview();
+  };
+});
+document.getElementById("f-statut").onchange = e=>{ doc.statut = e.target.value; markDirty();
+  if (doc.type==="facture" && doc.statut!=="brouillon" && !doc.reference){ doc.reference = suggestRef("facture"); document.getElementById("f-ref").value = doc.reference; }
+  updateStatutVisibility(); if (doc.statut==="payee" && !doc.datePaiement) doc.datePaiement = document.getElementById("f-date-paiement").value || todayISO(); };
+document.getElementById("f-date-paiement").onchange = e=>{ doc.datePaiement = e.target.value; markDirty(); };
+(function(){
+  const cb = document.getElementById("f-autosave");
+  cb.checked = autosaveOn;
+  cb.onchange = ()=>{
+    autosaveOn = cb.checked;
+    try{ localStorage.setItem(LS_AUTOSAVE, autosaveOn ? "on" : "off"); }catch(e){}
+    if (autosaveOn && autosaveDirty) markDirty(); else setSaveState(autosaveOn ? "Enregistrement automatique activé" : "Enregistrement manuel", "");
+  };
+})();
+document.getElementById("compta-annee").onchange = renderCompta;
+document.getElementById("btn-add-depense").onclick = async ()=>{
+  const montant = parseFloat(document.getElementById("d-montant").value);
+  if (!montant){ return; }
+  const dep = {
+    date: document.getElementById("d-date").value || todayISO(),
+    categorie: document.getElementById("d-categorie").value,
+    description: document.getElementById("d-description").value.trim(),
+    montant
+  };
+  await dbSaveDepense(dep);
+  document.getElementById("d-montant").value = "";
+  document.getElementById("d-description").value = "";
+  renderCompta();
+};
+function suggestRefLike(type, ref){
+  const year = new Date().getFullYear();
+  const prefix = ({facture:"FA", avoir:"AV"})[type] || "DQ";
+  return new RegExp("^" + prefix + "-" + year + "-\\d+$").test(ref||"");
+}
+document.getElementById("f-client-pick").onchange = e=>{
+  const c = clientList.find(x=>x.id===e.target.value);
+  if (c){ doc.client = {nom:c.nom,tel:c.tel,adresse:c.adresse}; }
+  else { doc.client = {nom:"",tel:"",adresse:""}; }
+  document.getElementById("f-client-nom").value = doc.client.nom;
+  document.getElementById("f-client-tel").value = doc.client.tel;
+  document.getElementById("f-client-adresse").value = doc.client.adresse;
+  renderPreview();
+};
+bindSimpleField("f-ref","reference");
+bindSimpleField("f-date","date");
+bindSimpleField("f-client-nom","client.nom");
+bindSimpleField("f-client-tel","client.tel");
+bindSimpleField("f-client-adresse","client.adresse");
+bindSimpleField("f-objet","objet");
+bindSimpleField("f-site","site");
+bindSimpleField("f-paiement","paiement");
+bindSimpleField("f-delai","delai");
+bindSimpleField("f-validite","validite");
+bindSimpleField("f-notes","notes");
+
+document.getElementById("btn-save").onclick = actionSave;
+document.getElementById("btn-new").onclick = actionNew;
+document.getElementById("btn-duplicate").onclick = actionDuplicate;
+document.getElementById("btn-delete").onclick = actionDelete;
+document.getElementById("btn-print").onclick = ()=>window.print();
+document.getElementById("list-search").oninput = renderList;
+document.getElementById("relance-seuil").onchange = e=>{ setSeuilRelance(parseInt(e.target.value,10)||30); renderList(); };
+document.querySelectorAll(".tab-btn").forEach(b=> b.onclick = ()=>showView(b.dataset.view) );
+document.getElementById("btn-add-client").onclick = async ()=>{
+  const nom = document.getElementById("c-nom").value.trim();
+  if (!nom) return;
+  const c = { nom, tel:document.getElementById("c-tel").value.trim(), adresse:document.getElementById("c-adresse").value.trim() };
+  const id = await dbSaveClient(c);
+  if (id) { /* la snapshot onSnapshot mettra à jour clientList */ }
+  else { c.id = uid(); clientList.push(c); renderClientPicker(); renderClientsTable(); }
+  document.getElementById("c-nom").value=""; document.getElementById("c-tel").value=""; document.getElementById("c-adresse").value="";
+};
+
+document.getElementById("btn-sync-open").onclick = ()=>{ document.getElementById("sync-status").textContent=""; document.getElementById("syncModal").classList.add("show"); };
+document.getElementById("syncClose").onclick = ()=> document.getElementById("syncModal").classList.remove("show");
+document.getElementById("btn-export").onclick = async ()=>{
+  const statusEl = document.getElementById("sync-status");
+  statusEl.style.color = "var(--ink-soft)"; statusEl.textContent = "Préparation du fichier…";
+  const r = await exportData();
+  statusEl.textContent = r === "ok" ? "Fichier exporté." : (r === "declined" ? "Export annulé." : "Échec de l'export.");
+};
+document.getElementById("btn-import-trigger").onclick = ()=> document.getElementById("import-file-input").click();
+document.getElementById("import-file-input").onchange = e=>{
+  const file = e.target.files && e.target.files[0];
+  if (file) handleImportFile(file);
+  e.target.value = "";
+};
+
+
+/* ===================== Agenda : tâches, projets à livrer, clients à voir, prospects =====================
+   Rappels : bandeau « à traiter » dans l'onglet, pastille rouge sur l'onglet, alerte à l'écran (toast) et,
+   si vous l'autorisez, notification du navigateur. Les rappels se déclenchent tant que l'outil est ouvert
+   dans un onglet (un fichier HTML ne peut pas réveiller l'ordinateur tout seul). */
+const LS_AGENDA = "gestionpme_agenda_v1", LS_AGENDA_NOTIF = "gestionpme_agenda_notified_v1";
+let agendaList = [], agendaFilter = "tous", agendaEditId = null, unsubAgenda = null, agendaStarted = false;
+const AG_TYPES = {
+  rdv:      { label:"Rendez-vous",              chip:"Rendez-vous",       color:"#0891b2", ph:"Ex : Rendez-vous avec M. Ndong — projet villa" },
+  urgence:  { label:"Urgence",                  chip:"Urgences",          color:"#c0392b", ph:"Ex : Fissure constatée sur poutre — chantier Oloumi" },
+  visite:   { label:"Visite de site",           chip:"Visites de site",   color:"#8a5a2b", ph:"Ex : Visite du terrain Akanda — relevés" },
+  seance:   { label:"Séance de travail",        chip:"Séances de travail",color:"#5b5fc7", ph:"Ex : Réunion de coordination avec l'architecte" },
+  admin:    { label:"Procédure administrative", chip:"Administratif",     color:"#546e7a", ph:"Ex : Dépôt du permis de construire en mairie" },
+  tache:    { label:"Tâche à faire",            chip:"Tâches à faire",    color:"#3f7d3a", ph:"Ex : Dalle R+1 chantier Oloumi" },
+  projet:   { label:"Projet à livrer",          chip:"Projets à livrer",  color:"#b7791f", ph:"Ex : Villa Mme Ndong — remise des clés" },
+  client:   { label:"Client à voir",            chip:"Clients à voir",    color:"#2b6cb0", ph:"Nom du client (liste de vos clients proposée)" },
+  prospect: { label:"Prospect",                 chip:"Prospects",         color:"#8e44ad", ph:"Ex : Société X — projet d'école" }
+};
+const AG_RESULTATS = { realise:"Réalisé", partiel:"Partiellement réalisé", non:"Non réalisé / reporté" };
+function agClosed(a){ return a.statut==="fait" || a.statut==="annule"; }
+const AG_RAPPELS = [["","Aucun"],["0","À l'heure"],["15","15 min avant"],["30","30 min avant"],["60","1 h avant"],["120","2 h avant"],["1440","1 jour avant"],["2880","2 jours avant"]];
+const AG_RAPPEL_DEFAUT = { rdv:"60", urgence:"0", visite:"120", seance:"30", admin:"1440", tache:"0", projet:"1440", client:"60", prospect:"60" };
+function agToday(){ const d = new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function agDayDiff(iso){ return Math.round((new Date(iso+"T00:00:00") - new Date(agToday()+"T00:00:00"))/86400000); }
+function agDue(a){ return a.date ? new Date(a.date+"T"+(a.heure||"08:00")+":00") : null; }
+function agRel(a){
+  if (!a.date) return "";
+  const n = agDayDiff(a.date);
+  const proj = a.type==="projet";
+  if (n<0) return { t:(proj?"Délai dépassé de ":"En retard de ")+(-n)+" j", c:"late" };
+  if (n===0) return { t:proj?"À livrer aujourd'hui":"Aujourd'hui", c:"today" };
+  if (n===1) return { t:"Demain", c:"" };
+  return { t:"Dans "+n+" j", c:"" };
+}
+function agWhen(a){
+  if (!a.date) return "Sans date";
+  const wd = new Date(a.date+"T12:00:00").toLocaleDateString("fr-FR",{weekday:"short"});
+  return wd + " " + fmtDateFR(a.date) + (a.heure ? " à " + a.heure.replace(":","h") : "");
+}
+async function dbSaveAgenda(a){
+  const data = { type:a.type||"tache", titre:a.titre||"", date:a.date||"", heure:a.heure||"", lieu:a.lieu||"", contacts:a.contacts||"", presents:a.presents||"", rapport:a.rapport||null,
+    notes:a.notes||"", rappel:(a.rappel==null?"":String(a.rappel)), statut:a.statut||"afaire", updatedAt:new Date().toISOString() };
+  if (dbAvailable && window.__db){
+    if (a.id){ await window.__db.collection("agenda").doc(a.id).set(data); return a.id; }
+    const ref = await window.__db.collection("agenda").add(data); return ref.id;
+  }
+  const id = a.id || uid();
+  const idx = agendaList.findIndex(x=>x.id===id);
+  const rec = { id, ...data };
+  if (idx>=0) agendaList[idx] = rec; else agendaList.push(rec);
+  if (!lsSet(LS_AGENDA, agendaList)) throw new Error("Stockage local indisponible");
+  renderAgenda();
+  return id;
+}
+async function dbDeleteAgenda(id){
+  if (!id) return;
+  if (dbAvailable && window.__db){ await window.__db.collection("agenda").doc(id).delete(); return; }
+  agendaList = agendaList.filter(a=>a.id!==id);
+  lsSet(LS_AGENDA, agendaList);
+  renderAgenda();
+}
+function agSorted(list){
+  return list.slice().sort((a,b)=>((a.date||"9999")+(a.heure||"99")).localeCompare((b.date||"9999")+(b.heure||"99")));
+}
+function agCardHtml(a){
+  const T = AG_TYPES[a.type] || AG_TYPES.tache, rel = agRel(a), closed = agClosed(a), R = a.rapport;
+  const lines = [];
+  lines.push(`<span class="ag-rel ${rel?rel.c:""}">${escText(agWhen(a))}${rel&&!closed?" — "+escText(rel.t):""}</span>`);
+  if (a.lieu) lines.push("📍 "+escText(a.lieu));
+  if (a.presents) lines.push("👥 Présents : "+escText(a.presents));
+  if (a.contacts) lines.push("👤 "+escText(a.contacts));
+  if (a.notes) lines.push(escText(a.notes).replace(/\n/g,"<br>"));
+  if (a.rappel!=="" && a.rappel!=null && !closed){
+    const r = AG_RAPPELS.find(x=>x[0]===String(a.rappel)); if (r) lines.push("🔔 "+escText(r[1]));
+  }
+  if (R){
+    const dec = R.decisions ? (R.decisions.length>160 ? R.decisions.slice(0,160)+"…" : R.decisions) : "";
+    lines.push(`<span class="ag-rap">📄 Rapport établi — ${escText(AG_RESULTATS[R.resultat]||"")}${dec?"<br>Décisions : "+escText(dec).replace(/\n/g," · "):""}</span>`);
+  }
+  const canRap = closed || (a.date && agDayDiff(a.date)<=0);
+  const badge = (a.type==="urgence" ? `<span class="ag-urg">URGENT</span>` : "") + (a.statut==="annule" ? `<span class="ag-cancelled">NON RÉALISÉ</span>` : "");
+  return `<div class="ag-card${closed?" done":""}" style="--ag:${T.color}" data-id="${escAttr(a.id)}">
+    <div class="ag-body"><span class="ag-type">${escText(T.label)}</span>${badge}<div class="ag-titre">${escText(a.titre||"(sans titre)")}</div><div class="ag-meta">${lines.join("<br>")}</div></div>
+    <div class="ag-actions">
+      <button class="btn" data-ag="done" title="${closed?"Rouvrir":"Marquer comme réalisé (avec rapport)"}">${closed?"↺":"✓"}</button>
+      ${canRap?`<button class="btn" data-ag="rapport" title="${R?"Voir / modifier le rapport d'activité":"Rédiger le rapport d'activité"}">📄</button>`:""}
+      ${R?`<button class="btn" data-ag="print" title="Imprimer / PDF du rapport">🖨</button>`:""}
+      <button class="btn" data-ag="edit" title="Modifier">✎</button>
+      <button class="btn btn-danger" data-ag="del" title="Supprimer">✕</button>
+    </div></div>`;
+}
+function renderAgenda(){
+  const host = document.getElementById("ag-list");
+  if (!host) return;
+  // pastille + titre de l'onglet
+  const open = agendaList.filter(a=>!agClosed(a) && a.date);
+  const urgent = open.filter(a=>agDayDiff(a.date)<=0);
+  const badge = document.getElementById("agenda-badge");
+  badge.hidden = urgent.length===0; badge.textContent = urgent.length;
+  document.title = (urgent.length?"("+urgent.length+") ":"") + brandTitle();
+  // bandeau
+  const late = open.filter(a=>agDayDiff(a.date)<0), today = open.filter(a=>agDayDiff(a.date)===0);
+  const al = document.getElementById("ag-alert");
+  if (late.length || today.length){
+    const item = a=>`• ${escText((AG_TYPES[a.type]||AG_TYPES.tache).label)} : <b style="display:inline">${escText(a.titre)}</b> — ${escText(agWhen(a))}`;
+    al.innerHTML = `<div class="ag-alert">${late.length?`<b style="color:var(--danger)">${late.length} en retard</b>${agSorted(late).map(item).join("<br>")}`:""}${late.length&&today.length?"<br><br>":""}${today.length?`<b>${today.length} pour aujourd'hui</b>${agSorted(today).map(item).join("<br>")}`:""}</div>`;
+  } else al.innerHTML = "";
+  // filtres
+  const chips = document.getElementById("ag-chips");
+  const keys = ["tous","urgence","rdv","visite","seance","admin","tache","projet","client","prospect","fait"];
+  chips.innerHTML = keys.map(k=>{
+    const n = k==="tous" ? agendaList.filter(a=>!agClosed(a)).length : k==="fait" ? agendaList.filter(a=>agClosed(a)).length : agendaList.filter(a=>a.type===k&&!agClosed(a)).length;
+    const lab = k==="tous"?"Tout":k==="fait"?"Terminés":AG_TYPES[k].chip;
+    return `<button class="ag-chip${agendaFilter===k?" active":""}" data-f="${k}">${lab} (${n})</button>`;
+  }).join("");
+  // liste groupée
+  let list = agendaFilter==="fait" ? agendaList.filter(a=>agClosed(a)) : agendaList.filter(a=>!agClosed(a) && (agendaFilter==="tous"||a.type===agendaFilter));
+  if (!list.length){ host.innerHTML = `<div class="empty-hint">${agendaFilter==="fait"?"Rien de terminé pour l'instant.":"Rien d'ouvert ici. Ajoutez une entrée avec le formulaire."}</div>`; return; }
+  if (agendaFilter==="fait"){ host.innerHTML = agSorted(list).reverse().map(agCardHtml).join(""); return; }
+  const groups = [["En retard","late",a=>a.date&&agDayDiff(a.date)<0],["Aujourd'hui","",a=>a.date&&agDayDiff(a.date)===0],["Demain","",a=>a.date&&agDayDiff(a.date)===1],
+    ["Cette semaine","",a=>a.date&&agDayDiff(a.date)>=2&&agDayDiff(a.date)<=7],["Plus tard","",a=>a.date&&agDayDiff(a.date)>7],["Sans date","",a=>!a.date]];
+  const sorted = agSorted(list);
+  host.innerHTML = groups.map(([lab,cls,fn])=>{
+    const items = sorted.filter(fn); if (!items.length) return "";
+    return `<div class="ag-group ${cls}"><h4>${lab} (${items.length})</h4>${items.map(agCardHtml).join("")}</div>`;
+  }).join("");
+}
+function agFormReset(keepType){
+  agendaEditId = null;
+  const t = keepType || document.getElementById("a-type").value;
+  ["a-titre","a-date","a-heure","a-lieu","a-presents","a-contacts","a-notes"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("a-type").value = t;
+  agTypeChanged(true);
+  document.getElementById("ag-form-title").textContent = "Nouvelle entrée";
+  document.getElementById("ag-save").textContent = "Ajouter";
+  document.getElementById("ag-cancel").style.display = "none";
+  document.getElementById("ag-msg").textContent = "";
+}
+function agTypeChanged(setDefaultRappel){
+  const t = document.getElementById("a-type").value;
+  document.getElementById("a-titre").placeholder = AG_TYPES[t].ph;
+  document.getElementById("a-titre-label").textContent = t==="client" ? "Client" : t==="prospect" ? "Prospect / société" : "Titre";
+  document.getElementById("a-date-label").textContent = t==="projet" ? "Date de livraison (délai)" : (t==="tache"||t==="admin") ? "Échéance (optionnelle)" : t==="urgence" ? "Date (aujourd'hui par défaut)" : "Date";
+  document.getElementById("a-titre").setAttribute("list", t==="client" ? "a-clients-list" : "");
+  if (setDefaultRappel) document.getElementById("a-rappel").value = AG_RAPPEL_DEFAUT[t];
+}
+function agFillClients(){
+  const dl = document.getElementById("a-clients-list");
+  dl.innerHTML = clientList.map(c=>`<option value="${escAttr(c.nom)}"></option>`).join("");
+}
+async function agSave(){
+  const msg = document.getElementById("ag-msg");
+  const a = { id:agendaEditId, type:document.getElementById("a-type").value, titre:document.getElementById("a-titre").value.trim(),
+    date:document.getElementById("a-date").value, heure:document.getElementById("a-heure").value, lieu:document.getElementById("a-lieu").value.trim(),
+    presents:document.getElementById("a-presents").value.trim(), contacts:document.getElementById("a-contacts").value.trim(), notes:document.getElementById("a-notes").value.trim(), rappel:document.getElementById("a-rappel").value };
+  if (!a.titre){ msg.textContent = "Indiquez un titre."; return; }
+  if (a.type==="urgence" && !a.date) a.date = agToday();   // une urgence est datée d'aujourd'hui par défaut
+  if (a.heure && !a.date){ msg.textContent = "Une heure demande une date."; return; }
+  if (!a.date) a.rappel = "";   // sans date, pas de rappel possible
+  if (agendaEditId){ const old = agendaList.find(x=>x.id===agendaEditId); a.statut = old ? old.statut : "afaire"; a.rapport = old ? (old.rapport||null) : null; }
+  try{
+    await dbSaveAgenda(a);
+    agFormReset(a.type);
+    agendaCheck();
+  }catch(e){ console.error(e); msg.textContent = "Échec de l'enregistrement — vérifiez l'espace du navigateur."; }
+}
+function agEdit(id){
+  const a = agendaList.find(x=>x.id===id); if (!a) return;
+  agendaEditId = id;
+  document.getElementById("a-type").value = a.type;
+  agTypeChanged(false);
+  document.getElementById("a-titre").value = a.titre; document.getElementById("a-date").value = a.date; document.getElementById("a-heure").value = a.heure;
+  document.getElementById("a-lieu").value = a.lieu; document.getElementById("a-presents").value = a.presents||""; document.getElementById("a-contacts").value = a.contacts; document.getElementById("a-notes").value = a.notes;
+  document.getElementById("a-rappel").value = a.rappel==null ? "" : String(a.rappel);
+  document.getElementById("ag-form-title").textContent = "Modifier l'entrée";
+  document.getElementById("ag-save").textContent = "Enregistrer la modification";
+  document.getElementById("ag-cancel").style.display = "";
+  { const f = document.getElementById("ag-form"); if (f.scrollIntoView) f.scrollIntoView({behavior:"smooth", block:"start"}); }
+}
+/* ---- Notifications ---- */
+function agNotified(){ try{ return JSON.parse(localStorage.getItem(LS_AGENDA_NOTIF)||"{}"); }catch(e){ return {}; } }
+function agSetNotified(o){
+  const lim = Date.now() - 90*86400000;
+  Object.keys(o).forEach(k=>{ if (o[k] < lim) delete o[k]; });
+  try{ localStorage.setItem(LS_AGENDA_NOTIF, JSON.stringify(o)); }catch(e){}
+}
+function showToast(title, body, color){
+  const host = document.getElementById("toasts");
+  const el = document.createElement("div");
+  el.className = "toast"; if (color) el.style.setProperty("--ag", color);
+  el.innerHTML = `<b>${escText(title)}</b><small>${body}</small>`;
+  el.onclick = ()=>{ el.remove(); };
+  host.appendChild(el);
+  while (host.children.length > 5) host.firstChild.remove();
+}
+function sysNotify(title, body, tag){
+  try{ if ("Notification" in window && Notification.permission === "granted") new Notification(title, { body, tag }); }catch(e){}
+}
+function agNotifyOne(a){
+  const T = AG_TYPES[a.type] || AG_TYPES.tache;
+  const body = agWhen(a) + (a.lieu ? " · " + a.lieu : "") + (a.contacts ? " · " + a.contacts : "");
+  showToast(T.label + " — " + a.titre, escText(body), T.color);
+  sysNotify(T.label + " — " + a.titre, body, "ag-" + a.id);
+}
+function agendaCheck(){
+  const now = Date.now(), done = agNotified(), fresh = [];
+  agendaList.forEach(a=>{
+    if (agClosed(a) || a.rappel==="" || a.rappel==null) return;
+    const due = agDue(a); if (!due) return;
+    const key = a.id+"|"+a.date+"|"+(a.heure||"")+"|"+a.rappel;
+    if (done[key]) return;
+    if (due.getTime() - (parseInt(a.rappel,10)||0)*60000 <= now){ done[key] = now; fresh.push(a); }
+  });
+  if (fresh.length){
+    agSetNotified(done);
+    if (!agendaStarted || fresh.length > 3){
+      const lst = agSorted(fresh).slice(0,5).map(a=>"• "+escText(a.titre)+" ("+escText(agWhen(a))+")").join("<br>");
+      showToast(fresh.length+" rappel(s) à traiter", lst + (fresh.length>5?"<br>…":""), "#c0392b");
+      sysNotify("Agenda : "+fresh.length+" rappel(s) à traiter", agSorted(fresh).slice(0,3).map(a=>a.titre).join(", "), "ag-summary");
+    } else fresh.forEach(agNotifyOne);
+  }
+  agendaStarted = true;
+  renderAgenda();
+}
+function agNotifBtnState(){
+  const b = document.getElementById("ag-notif-btn");
+  if (!("Notification" in window)){ b.style.display = "none"; return; }
+  const p = Notification.permission;
+  b.disabled = p !== "default";
+  b.textContent = p==="granted" ? "🔔 Notifications du navigateur actives" : p==="denied" ? "🔕 Bloquées dans le navigateur" : "🔔 Activer les notifications";
+}
+(function initAgenda(){
+  const sel = document.getElementById("a-rappel");
+  sel.innerHTML = AG_RAPPELS.map(r=>`<option value="${r[0]}">${r[1]}</option>`).join("");
+  document.getElementById("a-type").onchange = ()=>agTypeChanged(!agendaEditId);
+  document.getElementById("ag-save").onclick = agSave;
+  document.getElementById("ag-cancel").onclick = ()=>agFormReset();
+  document.getElementById("ag-notif-btn").onclick = async ()=>{
+    try{ await Notification.requestPermission(); }catch(e){}
+    agNotifBtnState();
+    if (Notification.permission==="granted") sysNotify(brandTitle(), "Les rappels de l'agenda s'afficheront ici.", "ag-test");
+  };
+  document.getElementById("ag-chips").onclick = e=>{ const b = e.target.closest("[data-f]"); if (b){ agendaFilter = b.dataset.f; renderAgenda(); } };
+  document.getElementById("ag-list").onclick = async e=>{
+    const b = e.target.closest("[data-ag]"); if (!b) return;
+    const id = b.closest(".ag-card").dataset.id, a = agendaList.find(x=>x.id===id); if (!a) return;
+    if (b.dataset.ag==="done"){
+      if (agClosed(a)){ try{ await dbSaveAgenda({ ...a, statut:"afaire" }); }catch(err){ console.error(err); } }
+      else agOpenReport(id);
+    }
+    if (b.dataset.ag==="rapport") agOpenReport(id);
+    if (b.dataset.ag==="print" && a.rapport) agPrintReport(a);
+    if (b.dataset.ag==="edit") agEdit(id);
+    if (b.dataset.ag==="del"){
+      const ok = await confirmAction("Supprimer cette entrée ?", "Cette action est définitive.");
+      if (ok){ await dbDeleteAgenda(id); if (agendaEditId===id) agFormReset(); }
+    }
+  };
+  document.querySelector('[data-view="agenda"]').addEventListener("click", agFillClients);
+  agTypeChanged(true); agNotifBtnState();
+  setInterval(agendaCheck, 30000);
+  document.addEventListener("visibilitychange", ()=>{ if (document.visibilityState==="visible") agendaCheck(); });
+})();
+
+
+/* ===================== Rapport d'activité (après le rendez-vous / la visite / la tâche) =====================
+   Enregistre le compte rendu dans l'entrée d'agenda (a.rapport) et le génère en document imprimable / PDF. */
+let agRapportId = null;
+function agOpenReport(id){
+  const a = agendaList.find(x=>x.id===id); if (!a) return;
+  agRapportId = id;
+  const R = a.rapport || {}, T = AG_TYPES[a.type] || AG_TYPES.tache;
+  const v = (k,val)=>{ document.getElementById(k).value = val==null ? "" : val; };
+  document.getElementById("rp-title").textContent = "Rapport d'activité — " + T.label + " : " + (a.titre||"");
+  v("r-resultat", R.resultat || (a.statut==="annule" ? "non" : "realise"));
+  v("r-date", R.date || (a.date && agDayDiff(a.date)<=0 ? a.date : agToday()));
+  v("r-lieu", R.lieu!=null ? R.lieu : a.lieu);
+  v("r-presents", R.presents!=null ? R.presents : a.presents);
+  v("r-resume", R.resume); v("r-decisions", R.decisions); v("r-actions", R.actions); v("r-obs", R.obs); v("r-suite", R.suite);
+  document.getElementById("rp-msg").textContent = "";
+  document.getElementById("rapportModal").classList.add("show");
+}
+function agCloseReport(){ document.getElementById("rapportModal").classList.remove("show"); agRapportId = null; }
+async function agSaveReport(thenPrint){
+  const a = agendaList.find(x=>x.id===agRapportId); if (!a) return;
+  const g = k=>document.getElementById(k).value.trim();
+  const R = { resultat:g("r-resultat"), date:g("r-date"), lieu:g("r-lieu"), presents:g("r-presents"), resume:g("r-resume"), decisions:g("r-decisions"),
+    actions:g("r-actions"), obs:g("r-obs"), suite:g("r-suite"), updatedAt:new Date().toISOString() };
+  const msg = document.getElementById("rp-msg");
+  if (!R.resume && !R.decisions && !R.actions && !R.obs){ msg.textContent = "Renseignez au moins le déroulement, les décisions, les actions ou des observations."; return; }
+  if (!R.date){ msg.textContent = "Indiquez la date de réalisation."; return; }
+  const rec = { ...a, rapport:R, statut: R.resultat==="non" ? "annule" : "fait" };
+  try{
+    await dbSaveAgenda(rec);
+    agCloseReport();
+    if (thenPrint) agPrintReport(rec);
+  }catch(e){ console.error(e); msg.textContent = "Échec de l'enregistrement — vérifiez l'espace du navigateur."; }
+}
+function agReportHtml(a){
+  const R = a.rapport || {}, T = AG_TYPES[a.type] || AG_TYPES.tache;
+  const nl = s=>s ? escText(s).replace(/\n/g,"<br>") : "—";
+  const logo = params.logo || LOGO_DEFAUT;
+  const ref = "RA-" + String(R.date||a.date||agToday()).replace(/-/g,"") + "-" + String(a.id||"").slice(0,4).toUpperCase();
+  const row = (k,v)=>`<tr><td style="width:30%;padding:6px 8px;border:1px solid #bbb;background:#f3f4f1;font-weight:700;vertical-align:top;">${k}</td><td style="padding:6px 8px;border:1px solid #bbb;vertical-align:top;">${v}</td></tr>`;
+  const sec = (t,v)=>`<div style="margin-top:14px;page-break-inside:avoid;"><div style="font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.04em;border-bottom:2px solid #2f3d2e;padding-bottom:3px;margin-bottom:6px;">${t}</div><div style="font-size:12.5px;line-height:1.5;min-height:22px;">${nl(v)}</div></div>`;
+  return `<div style="font-family:Arial,Helvetica,sans-serif;color:#111;font-size:12.5px;line-height:1.42;">
+    <table style="width:100%;border-collapse:collapse;"><tr>
+      <td style="width:90px;vertical-align:middle;">${logo?`<img src="${escAttr(logo)}" alt="" style="max-width:80px;max-height:64px;">`:""}</td>
+      <td style="vertical-align:middle;"><div style="font-size:16px;font-weight:700;">${escText(params.nom||"")}</div><div style="font-size:11.5px;color:#444;">${escText(params.activite||"")}</div></td>
+      <td style="text-align:right;vertical-align:middle;font-size:11.5px;color:#444;">${escText(params.ville||"")}, le ${escText(fmtDateFR(agToday()))}<br>Réf. ${escText(ref)}</td>
+    </tr></table>
+    <div style="text-align:center;margin:18px 0 12px;"><div style="font-size:20px;font-weight:700;letter-spacing:.06em;">RAPPORT D'ACTIVITÉ</div><div style="font-size:13px;margin-top:3px;">${escText(T.label)}</div></div>
+    <table style="width:100%;border-collapse:collapse;">
+      ${row("Objet", "<b>"+escText(a.titre||"")+"</b>")}
+      ${row("Prévu le", escText(agWhen(a)))}
+      ${row("Réalisé le", escText(fmtDateFR(R.date)||"—"))}
+      ${row("Résultat", escText(AG_RESULTATS[R.resultat]||"—"))}
+      ${row("Lieu", escText(R.lieu||a.lieu||"—"))}
+      ${row("Personnes présentes", nl(R.presents||a.presents))}
+      ${a.contacts?row("Personnes ressources", nl(a.contacts)):""}
+    </table>
+    ${sec("Déroulement / résumé", R.resume)}
+    ${sec("Décisions prises", R.decisions)}
+    ${sec("Actions à mener", R.actions)}
+    ${sec("Observations et autres éléments", R.obs)}
+    ${sec("Prochaine étape", R.suite)}
+    <table style="width:100%;border-collapse:collapse;margin-top:26px;page-break-inside:avoid;"><tr>
+      <td style="width:50%;padding:8px;border:1px solid #bbb;height:80px;vertical-align:top;">Rédigé par :</td>
+      <td style="width:50%;padding:8px;border:1px solid #bbb;height:80px;vertical-align:top;">Visa / signature :</td>
+    </tr></table>
+    <div style="margin-top:16px;padding-top:6px;border-top:1px solid #bbb;font-size:10.5px;color:#555;text-align:center;">${escText(params.pied||"")}</div>
+  </div>`;
+}
+function agPrintReport(a){
+  const host = document.getElementById("rapport-print");
+  host.innerHTML = agReportHtml(a);
+  document.body.classList.add("print-rapport");
+  const end = ()=>{ document.body.classList.remove("print-rapport"); host.innerHTML = ""; window.removeEventListener("afterprint", end); };
+  window.addEventListener("afterprint", end);
+  setTimeout(()=>window.print(), 80);
+}
+(function initAgendaRapport(){
+  document.getElementById("rp-cancel").onclick = agCloseReport;
+  document.getElementById("rp-save").onclick = ()=>agSaveReport(false);
+  document.getElementById("rp-print").onclick = ()=>agSaveReport(true);
+})();
+
+/* ===================== Paramètres de la société ===================== */
+const LS_PARAMS = "gestionpme_parametres_v1";
+const PARAM_DEFAUT = {
+  nom:"THE HIVE",
+  activite:"Bureau d'Etudes Techniques en Bâtiments et des Travaux Publics",
+  capital:"1 000 000 F CFA",
+  rccm:"GA-LBV-01-2022-A10-04134",
+  nif:"2022 0201 5021 A",
+  siege:"OLOUMI-Libreville (GABON)",
+  bp:"7677",
+  tel:"077 21 94 69 / 065 08 37 69",
+  email:"btphiveproject@gmail.com",
+  ville:"Libreville",
+  pied:"THE HIVE — Bureau d'Etudes Techniques en Bâtiments — Siège social : Bd Issambi Boardman, Libreville — Tel 077219469 / 065083769 — btphiveproject@gmail.com",
+  logo:""
+};
+const LOGO_DEFAUT = (document.querySelector(".brand img")||{}).src || "";
+let params = (function(){
+  try{ const o = JSON.parse(localStorage.getItem(LS_PARAMS)||"null"); if (o && typeof o==="object") return { ...PARAM_DEFAUT, ...o }; }catch(e){}
+  return { ...PARAM_DEFAUT };
+})();
+function brandTitle(){ return (params.nom||"THE HIVE") + " GESTION"; }
+function saveParams(silent){
+  if (!silent) params.updatedAt = new Date().toISOString();
+  try{ localStorage.setItem(LS_PARAMS, JSON.stringify(params)); }catch(e){ return false; }
+  folderDirty();
+  return true;
+}
+function companyIdentHtml(){
+  const P = params, e = escText;
+  const l1 = "<b>"+e(P.nom)+"</b>" + (P.activite?" — "+e(P.activite):"") + (P.capital?" au Capital de "+e(P.capital):"");
+  const l2 = [P.rccm?"R.C.C.M : "+e(P.rccm):"", P.nif?"NIF : "+e(P.nif):""].filter(Boolean).join(" – ");
+  const l3 = [P.siege?"Siège Social "+e(P.siege):"", P.bp?"BP : "+e(P.bp):"", P.tel?"TEL : "+e(P.tel):"", P.email?"Email : "+e(P.email):""].filter(Boolean).join(" – ");
+  return [l1,l2,l3].filter(Boolean).join("<br>");
+}
+function applyParams(){
+  const logo = params.logo || LOGO_DEFAUT;
+  const img = document.querySelector(".brand img"); if (img) img.src = logo;
+  const sp = document.querySelector(".brand span"); if (sp) sp.textContent = brandTitle();
+  renderAgendaTitleSafe();
+  // l'aperçu change, pas le document : on ne le déclare pas « modifié »
+  const prev = loadingForm; loadingForm = true; try{ renderPreview(); }finally{ loadingForm = prev; }
+  const pi = document.getElementById("p-logo-img"); if (pi) pi.src = logo;
+}
+function renderAgendaTitleSafe(){ try{ renderAgenda(); }catch(e){ document.title = brandTitle(); } }
+const PARAM_FIELDS = ["nom","capital","activite","rccm","nif","siege","bp","ville","tel","email","pied"];
+function renderParametres(){
+  PARAM_FIELDS.forEach(k=>{ const el = document.getElementById("p-"+k); if (el && document.activeElement!==el) el.value = params[k]||""; });
+  document.getElementById("p-logo-img").src = params.logo || LOGO_DEFAUT;
+  renderFolderUi();
+}
+function resizeLogo(file){
+  return new Promise((resolve, reject)=>{
+    const fr = new FileReader();
+    fr.onerror = ()=>reject(new Error("lecture"));
+    fr.onload = ()=>{
+      const raw = fr.result, img = new Image();
+      img.onerror = ()=>reject(new Error("image"));
+      img.onload = ()=>{
+        try{
+          const MAX = 500, k = Math.min(1, MAX / (img.naturalWidth || img.width || MAX));
+          const w = Math.max(1, Math.round((img.naturalWidth||img.width||MAX)*k)), h = Math.max(1, Math.round((img.naturalHeight||img.height||MAX)*k));
+          const c = document.createElement("canvas"); c.width = w; c.height = h;
+          const ctx = c.getContext("2d"); ctx.drawImage(img, 0, 0, w, h);
+          resolve(c.toDataURL(file.type==="image/jpeg" ? "image/jpeg" : "image/png", 0.9));
+        }catch(e){ raw.length < 1500000 ? resolve(raw) : reject(e); }
+      };
+      img.src = raw;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+let paramSaveTimer = null;
+function paramChanged(){
+  const st = document.getElementById("p-state");
+  st.textContent = "Modification en cours…"; st.className = "save-state";
+  clearTimeout(paramSaveTimer);
+  paramSaveTimer = setTimeout(()=>{
+    const ok = saveParams();
+    applyParams();
+    st.textContent = ok ? "✓ Enregistré à " + new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}) : "⚠ Échec de l'enregistrement";
+    st.className = "save-state " + (ok?"ok":"warn");
+  }, 600);
+}
+(function initParametres(){
+  PARAM_FIELDS.forEach(k=>{
+    const el = document.getElementById("p-"+k);
+    el.addEventListener("input", ()=>{ params[k] = el.value; paramChanged(); });
+  });
+  document.getElementById("p-logo-pick").onclick = ()=>document.getElementById("p-logo-file").click();
+  document.getElementById("p-logo-file").onchange = async e=>{
+    const f = e.target.files && e.target.files[0]; e.target.value = ""; if (!f) return;
+    try{ params.logo = await resizeLogo(f); paramChanged(); document.getElementById("p-logo-img").src = params.logo; }
+    catch(err){ const st = document.getElementById("p-state"); st.textContent = "⚠ Image illisible"; st.className = "save-state warn"; }
+  };
+  document.getElementById("p-logo-reset").onclick = ()=>{ params.logo = ""; paramChanged(); document.getElementById("p-logo-img").src = LOGO_DEFAUT; };
+  document.getElementById("p-pied-gen").onclick = ()=>{
+    params.pied = [params.nom, params.siege?"Siège social : "+params.siege:"", params.tel?"Tel "+params.tel:"", params.email].filter(Boolean).join(" — ");
+    document.getElementById("p-pied").value = params.pied; paramChanged();
+  };
+  document.getElementById("p-reset").onclick = async ()=>{
+    const ok = await confirmAction("Rétablir les valeurs d'origine ?", "Les informations de la société et le logo reviennent à ceux fournis avec l'outil.");
+    if (!ok) return;
+    params = { ...PARAM_DEFAUT }; renderParametres(); paramChanged();
+  };
+})();
+
+/* ===================== Dossier de sauvegarde sur l'ordinateur =====================
+   Utilise l'API « dossier local » de Chrome / Edge (ordinateur). Le dossier choisi reçoit le fichier
+   the-hive-gestion-donnees.json (toutes les données), mis à jour après chaque modification, et une copie
+   par jour dans le sous-dossier « sauvegardes » (30 jours conservés). Le dossier est mémorisé : à la
+   réouverture, les données du fichier sont fusionnées (la version la plus récente de chaque élément gagne). */
+const FD_FILE = "the-hive-gestion-donnees.json", FD_SUB = "sauvegardes", FD_KEEP = 30;
+const folder = { handle:null, status:"none", lastSave:null, error:"", supported: ("showDirectoryPicker" in window) };
+function idbOpen(){ return new Promise((res,rej)=>{ const r = indexedDB.open("gestionpme_fs",1); r.onupgradeneeded = ()=>r.result.createObjectStore("h"); r.onsuccess = ()=>res(r.result); r.onerror = ()=>rej(r.error); }); }
+async function idbGet(k){ const db = await idbOpen(); return new Promise((res,rej)=>{ const q = db.transaction("h").objectStore("h").get(k); q.onsuccess = ()=>res(q.result); q.onerror = ()=>rej(q.error); }); }
+async function idbSet(k,v){ const db = await idbOpen(); return new Promise((res,rej)=>{ const t = db.transaction("h","readwrite"); t.objectStore("h").put(v,k); t.oncomplete = ()=>res(); t.onerror = ()=>rej(t.error); }); }
+async function idbDel(k){ const db = await idbOpen(); return new Promise((res,rej)=>{ const t = db.transaction("h","readwrite"); t.objectStore("h").delete(k); t.oncomplete = ()=>res(); t.onerror = ()=>rej(t.error); }); }
+
+function buildSnapshot(){
+  return { version:2, exportedAt:new Date().toISOString(), documents:docList, clients:clientList, depenses:depenseList, agenda:agendaList, parametres:params };
+}
+function fmtHM(d){ return d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}); }
+function renderFolderUi(){
+  const pill = document.getElementById("folderPill");
+  const st = document.getElementById("fd-state"), note = document.getElementById("fd-note");
+  const b = id=>document.getElementById(id);
+  let pillTxt = "📁 Aucun dossier", pillCls = "status-pill", cls = "pr-state off", txt = "", noteTxt = "";
+  if (!folder.supported){
+    pillTxt = "📁 Non disponible"; cls = "pr-state warn";
+    txt = "Ce navigateur ne permet pas de choisir un dossier. Utilisez Chrome ou Edge sur ordinateur.";
+    noteTxt = "En attendant, le bouton « Télécharger une copie » crée un fichier .json que vous pouvez ranger où vous voulez. Les données restent aussi enregistrées dans ce navigateur.";
+  } else if (folder.status==="ok"){
+    pillTxt = "📁 " + folder.handle.name + (folder.lastSave ? " · " + fmtHM(folder.lastSave) : ""); pillCls += " ok"; cls = "pr-state ok";
+    txt = "Dossier connecté : <b>" + escText(folder.handle.name) + "</b>" + (folder.lastSave ? "<br>Dernier enregistrement à " + fmtHM(folder.lastSave) + "." : "<br>En attente du premier enregistrement.");
+    noteTxt = "Fichier : " + FD_FILE + " · copies quotidiennes dans « " + FD_SUB + " » (30 jours).";
+  } else if (folder.status==="needperm"){
+    pillTxt = "📁 À reconnecter"; pillCls += " warn"; cls = "pr-state warn";
+    txt = "Dossier mémorisé : <b>" + escText(folder.handle.name) + "</b>. Le navigateur demande une autorisation à chaque nouvelle session.<br>Cliquez sur « Reconnecter le dossier » : tant que ce n'est pas fait, les modifications restent dans le navigateur mais pas dans le dossier.";
+  } else if (folder.status==="error"){
+    pillTxt = "📁 Erreur"; pillCls += " warn"; cls = "pr-state warn";
+    txt = "Le dossier n'a pas pu être écrit : " + escText(folder.error||"erreur inconnue") + "<br>Vérifiez qu'il existe toujours, puis reconnectez-le.";
+  } else {
+    txt = "Aucun dossier choisi : les données sont gardées uniquement dans ce navigateur. Choisissez un dossier (disque, clé USB, dossier synchronisé) pour avoir un fichier de sauvegarde.";
+  }
+  if (pill){ pill.textContent = pillTxt; pill.className = pillCls; }
+  if (st){ st.className = cls; st.innerHTML = txt; }
+  if (note) note.textContent = noteTxt;
+  if (b("fd-pick")){
+    const has = !!folder.handle && folder.supported;
+    b("fd-pick").style.display = folder.supported ? "" : "none";
+    b("fd-pick").textContent = has ? "📁 Changer de dossier…" : "📁 Choisir le dossier…";
+    b("fd-reconnect").style.display = folder.status==="needperm" || folder.status==="error" ? "" : "none";
+    b("fd-now").style.display = folder.status==="ok" ? "" : "none";
+    b("fd-load").style.display = folder.status==="ok" ? "" : "none";
+    b("fd-off").style.display = has ? "" : "none";
+  }
+}
+async function fdWriteFile(dir, name, text){
+  const fh = await dir.getFileHandle(name, { create:true });
+  const w = await fh.createWritable();
+  await w.write(text); await w.close();
+}
+async function folderWrite(){
+  if (!folder.handle || folder.status!=="ok") return false;
+  try{
+    const json = JSON.stringify(buildSnapshot(), null, 2);
+    await fdWriteFile(folder.handle, FD_FILE, json);
+    const sub = await folder.handle.getDirectoryHandle(FD_SUB, { create:true });
+    const bname = "the-hive-gestion-" + agToday() + ".json";
+    let isNewDay = true;
+    try{ await sub.getFileHandle(bname); isNewDay = false; }catch(e){}
+    await fdWriteFile(sub, bname, json);
+    if (isNewDay){
+      const names = [];
+      for await (const [n] of sub.entries()) if (/^the-hive-gestion-\d{4}-\d{2}-\d{2}\.json$/.test(n)) names.push(n);
+      names.sort();
+      while (names.length > FD_KEEP){ try{ await sub.removeEntry(names.shift()); }catch(e){ break; } }
+    }
+    folder.lastSave = new Date(); folder.error = "";
+    renderFolderUi();
+    return true;
+  }catch(e){
+    console.error("dossier", e);
+    folder.error = (e && e.message) || String(e);
+    folder.status = (e && (e.name==="NotAllowedError" || e.name==="SecurityError")) ? "needperm" : "error";
+    renderFolderUi();
+    return false;
+  }
+}
+let folderTimer = null;
+function folderDirty(){
+  if (!folder.handle) return;
+  clearTimeout(folderTimer);
+  folderTimer = setTimeout(folderWrite, 800);
+}
+async function folderRead(){
+  if (!folder.handle || folder.status!=="ok") return null;
+  try{
+    const fh = await folder.handle.getFileHandle(FD_FILE);
+    const txt = await (await fh.getFile()).text();
+    return JSON.parse(txt);
+  }catch(e){ return null; }
+}
+async function folderLoadMerge(){
+  const payload = await folderRead();
+  if (!payload) return null;
+  return await mergeImportedData(payload);
+}
+async function folderConnect(handle){
+  folder.handle = handle; folder.status = "ok"; folder.error = "";
+  try{ await idbSet("dir", handle); }catch(e){}
+  const r = await folderLoadMerge().catch(()=>null);
+  await folderWrite();
+  renderFolderUi();
+  return r;
+}
+async function folderInit(){
+  renderFolderUi();
+  if (!folder.supported) return;
+  try{
+    const h = await idbGet("dir");
+    if (!h) return;
+    folder.handle = h;
+    const p = await h.queryPermission({ mode:"readwrite" });
+    if (p === "granted"){ folder.status = "ok"; await folderLoadMerge().catch(()=>null); await folderWrite(); }
+    else folder.status = "needperm";
+  }catch(e){ console.error(e); }
+  renderFolderUi();
+}
+(function initFolderUi(){
+  const msg = t=>{ const el = document.getElementById("fd-note"); if (el) el.textContent = t; };
+  document.getElementById("fd-pick").onclick = async ()=>{
+    try{
+      const h = await window.showDirectoryPicker({ mode:"readwrite", id:"gestionpme" });
+      const r = await folderConnect(h);
+      msg(r ? `Dossier connecté. Fusion : ${r.added} ajouté(s), ${r.updated} mis à jour, ${r.unchanged} déjà à jour.` : "Dossier connecté. Premier fichier créé.");
+    }catch(e){ if (e && e.name!=="AbortError") msg("Impossible d'utiliser ce dossier : " + (e.message||e)); }
+  };
+  document.getElementById("fd-reconnect").onclick = async ()=>{
+    try{
+      const p = await folder.handle.requestPermission({ mode:"readwrite" });
+      if (p === "granted"){ folder.status = "ok"; const r = await folderLoadMerge().catch(()=>null); await folderWrite(); renderFolderUi(); if (r) msg(`Fusion : ${r.added} ajouté(s), ${r.updated} mis à jour.`); }
+      else msg("Autorisation refusée : le dossier reste déconnecté.");
+    }catch(e){ msg("Reconnexion impossible : " + (e.message||e)); }
+  };
+  document.getElementById("fd-now").onclick = async ()=>{ const ok = await folderWrite(); msg(ok ? "Enregistré dans le dossier." : "Échec de l'enregistrement dans le dossier."); };
+  document.getElementById("fd-load").onclick = async ()=>{
+    const r = await folderLoadMerge().catch(()=>null);
+    msg(r ? `Fusion terminée : ${r.added} ajouté(s), ${r.updated} mis à jour, ${r.unchanged} déjà à jour.` : "Aucun fichier de données trouvé dans le dossier.");
+  };
+  document.getElementById("fd-off").onclick = async ()=>{
+    const ok = await confirmAction("Déconnecter le dossier ?", "Les fichiers déjà écrits restent dans le dossier ; l'outil cesse simplement d'y écrire.");
+    if (!ok) return;
+    clearTimeout(folderTimer); folder.handle = null; folder.status = "none"; folder.lastSave = null;
+    try{ await idbDel("dir"); }catch(e){}
+    renderFolderUi();
+  };
+  document.getElementById("fd-download").onclick = async ()=>{ const r = await exportData(); msg(r==="ok" ? "Copie téléchargée." : "Échec du téléchargement."); };
+  document.getElementById("folderPill").onclick = ()=>showView("parametres");
+})();
+/* Toute écriture de données déclenche (après 0,8 s) la mise à jour du fichier du dossier. */
+function wrapFolder(fn){ return async function(){ const r = await fn.apply(this, arguments); folderDirty(); return r; }; }
+dbSaveDoc = wrapFolder(dbSaveDoc);       dbDeleteDoc = wrapFolder(dbDeleteDoc);
+dbSaveClient = wrapFolder(dbSaveClient); dbDeleteClient = wrapFolder(dbDeleteClient);
+dbSaveDepense = wrapFolder(dbSaveDepense); dbDeleteDepense = wrapFolder(dbDeleteDepense);
+dbSaveAgenda = wrapFolder(dbSaveAgenda); dbDeleteAgenda = wrapFolder(dbDeleteAgenda);
+
+
+/* ===================== Devis → facture, acomptes, solde, annulation par avoir =====================
+   Facture : brouillon (sans numéro, supprimable) → émise (numéro FA-AAAA-NNN attribué, non supprimable)
+   → payée. Une facture émise ne se supprime pas : on l'annule, ce qui crée un avoir AV-AAAA-NNN. */
+function facStatut(d){ return d.statut || "emise"; }
+function isImpayee(d){ return d.type==="facture" && facStatut(d)==="emise"; }
+function docTitleHtml(d){
+  const k = d.lien && d.lien.kind;
+  const base = d.type==="facture" ? (k==="acompte" ? "FACTURE D'ACOMPTE" : k==="solde" ? "FACTURE DE SOLDE" : "FACTURE") : d.type==="avoir" ? "AVOIR" : "DEVIS";
+  const tag = (t,c)=>` <span style="font-size:12px;color:${c};">— ${t}</span>`;
+  let extra = "";
+  if (d.type==="facture"){
+    const st = facStatut(d);
+    if (st==="payee") extra = tag("PAYÉE"+(d.datePaiement?" LE "+fmtDateFR(d.datePaiement):""), "#2f6b3a");
+    else if (st==="brouillon") extra = tag("BROUILLON", "#777777");
+    else if (st==="annulee") extra = tag("ANNULÉE"+(d.avoirRef?" — AVOIR N° "+escText(d.avoirRef):""), "#a3402f");
+  }
+  return base + extra;
+}
+function docLienHtml(d){
+  const L = d.lien; let t = "";
+  if (L && d.type==="facture"){
+    const dv = "le devis n° " + escText(L.devisRef||"—") + (L.devisDate?" du "+fmtDateFR(L.devisDate):"") + (L.devisHT?" (montant HT : "+fmtFCFA(L.devisHT)+")":"");
+    if (L.kind==="acompte") t = "Acompte de " + L.pct + " % sur " + dv + ".";
+    else if (L.kind==="solde") t = "Solde de " + dv + (L.prevRefs && L.prevRefs.length ? " — déduction faite des factures n° " + L.prevRefs.map(escText).join(", ") : "") + ".";
+    else t = "Établie sur " + dv + ".";
+  } else if (L && d.type==="avoir"){
+    t = "Avoir sur la facture n° " + escText(L.factureRef||"—") + (L.factureDate?" du "+fmtDateFR(L.factureDate):"") + ".";
+  }
+  if (d.type==="facture" && facStatut(d)==="annulee" && d.avoirRef) t += (t?" ":"") + "Facture annulée" + (d.annuleLe?" le "+fmtDateFR(d.annuleLe):"") + " — avoir n° " + escText(d.avoirRef) + ".";
+  return t ? `<div class="paper-lien">${t}</div>` : "";
+}
+function listStatutBadge(d, seuil){
+  const m = "margin-left:6px;";
+  if (d.type==="facture"){
+    const st = facStatut(d);
+    if (st==="brouillon") return `<span class="badge" style="${m}">Brouillon</span>`;
+    if (st==="annulee") return `<span class="badge annulee" style="${m}">Annulée${d.avoirRef?" · "+escText(d.avoirRef):""}</span>`;
+    if (st==="payee") return `<span class="badge" style="color:#2f6b3a;${m}">Payée</span>`;
+    const late = joursDepuis(d.date) >= seuil;
+    return `<span class="badge" style="color:${late?"var(--danger)":"#c98a1a"};${m}">${late?`En retard (${joursDepuis(d.date)} j)`:"Non payée"}</span>`;
+  }
+  if (d.type==="devis" && d.id){
+    const b = devisBilling(d);
+    if (b.lies.length && b.ht>0) return `<span class="badge" style="color:#2f6b3a;${m}">Facturé ${Math.round(b.billed/b.ht*100)} %</span>`;
+  }
+  return "";
+}
+function devisBilling(devis){
+  const lies = devis.id ? docList.filter(x=>x.type==="facture" && x.lien && x.lien.devisId===devis.id && facStatut(x)!=="annulee") : [];
+  const ht = docHT(devis), billed = lies.reduce((s,x)=>s+docHT(x),0);
+  return { lies, ht, billed, reste: ht - billed };
+}
+function cloneLines(lignes){ return lignes.map(l=>({ ...l, id:uid() })); }
+function buildFacture(devis, kind, pct){
+  const b = devisBilling(devis);
+  if (b.ht <= 0) return { error:"Le devis est vide : ajoutez des prestations avant de facturer." };
+  let sections;
+  if (kind==="complete"){
+    if (b.lies.length) return { error:"Ce devis a déjà été facturé en partie : choisissez le solde." };
+    sections = devis.sections.map(sec=>({ titre:sec.titre, ...(sec.categorie?{categorie:sec.categorie}:{}), lignes:cloneLines(sec.lignes) }));
+  } else {
+    if (kind==="acompte" && !(pct>=1 && pct<=99)) return { error:"Indiquez un pourcentage entre 1 et 99." };
+    if (kind==="solde" && !b.lies.length) return { error:"Aucune facture précédente : créez d'abord un acompte ou une facture complète." };
+    if (b.reste <= 0) return { error:"Ce devis est déjà entièrement facturé." };
+    sections = [];
+    devis.sections.forEach((sec,i)=>{
+      const sub = sectionSubtotal(sec);
+      let amount;
+      if (kind==="acompte") amount = Math.round(sub*pct/100);
+      else {
+        const prev = b.lies.reduce((sum,f)=> sum + (f.sections.length===devis.sections.length ? sectionSubtotal(f.sections[i]) : sub*docHT(f)/b.ht), 0);
+        amount = Math.max(0, Math.round(sub - prev));
+      }
+      if (amount <= 0) return;
+      const nom = sec.titre || devis.objet || "travaux";
+      sections.push({ titre:sec.titre, ...(sec.categorie?{categorie:sec.categorie}:{}),
+        lignes:[{ id:uid(), designation:(kind==="acompte" ? "Acompte de "+pct+" % — " : "Solde — ")+nom, unite:"Forfait", qte:1, pu:amount }] });
+    });
+    if (!sections.length) return { error:"Rien à facturer sur ce devis." };
+  }
+  const f = { ...blankDoc(), type:"facture", reference:"", date:agToday(), statut:"brouillon",
+    client:{ ...devis.client }, objet:devis.objet||"", site:devis.site||"", sections,
+    taxes:JSON.parse(JSON.stringify(devis.taxes||blankDoc().taxes)), paiement:devis.paiement||"", delai:"", validite:"", notes:"" };
+  const htF = docHT(f);
+  if (kind==="acompte" && htF > b.reste + 2) return { error:"Ce pourcentage dépasse ce qui reste à facturer." };
+  f.lien = { devisId:devis.id, devisRef:devis.reference||"", devisDate:devis.date||"", devisHT:b.ht, kind,
+    pct: kind==="acompte" ? pct : kind==="solde" ? Math.round(htF/b.ht*1000)/10 : 100,
+    prevRefs: b.lies.map(x=>x.reference).filter(Boolean) };
+  return { facture:f, ht:htF, ttc:docTTC(f), billed:b };
+}
+let fmDevis = null;
+function fmKind(){ const r = document.querySelector('input[name="fm-kind"]:checked'); return r ? r.value : ""; }
+function fmUpdate(){
+  const prev = document.getElementById("fm-prev"), ok = document.getElementById("fm-ok");
+  const kind = fmKind();
+  if (!kind){ prev.className = "pr-state off"; prev.textContent = "Choisissez le type de facture."; ok.disabled = true; return; }
+  const r = buildFacture(fmDevis, kind, parseFloat(document.getElementById("fm-pct").value));
+  if (r.error){ prev.className = "pr-state off"; prev.textContent = r.error; ok.disabled = true; return; }
+  prev.className = "pr-state ok"; ok.disabled = false;
+  prev.innerHTML = "Montant HT : <b>" + fmtFCFA(r.ht) + "</b> — net après taxes : <b>" + fmtFCFA(r.ttc) + "</b><br>La facture sera créée en brouillon, sans numéro, pour que vous puissiez la vérifier.";
+}
+function openFacturerModal(devis){
+  fmDevis = devis;
+  const b = devisBilling(devis);
+  if (b.ht <= 0){ showToast("Devis vide", "Ajoutez des prestations avant de facturer.", "#c0392b"); return; }
+  document.getElementById("fm-ref").textContent = devis.reference || "(sans numéro)";
+  const pctB = Math.round(b.billed/b.ht*1000)/10;
+  document.getElementById("fm-info").innerHTML = "Montant HT du devis : <b>" + fmtFCFA(b.ht) + "</b>." + (b.lies.length ? "<br>Déjà facturé : <b>" + fmtFCFA(b.billed) + "</b> (" + pctB + " %) — reste : <b>" + fmtFCFA(Math.max(0,b.reste)) + "</b>." : "");
+  const can = { complete:!b.lies.length, acompte:b.reste>0 && pctB<99, solde:b.lies.length>0 && b.reste>0 };
+  ["complete","acompte","solde"].forEach(k=>{ document.getElementById("fm-o-"+k).classList.toggle("off", !can[k]); });
+  document.querySelectorAll('input[name="fm-kind"]').forEach(r=>{ r.checked = false; });
+  const first = !b.lies.length ? "complete" : (can.solde ? "solde" : "");
+  if (first) document.querySelector('input[name="fm-kind"][value="'+first+'"]').checked = true;
+  const maxPct = Math.max(1, Math.floor(99 - pctB));
+  const pctEl = document.getElementById("fm-pct"); pctEl.max = maxPct; pctEl.value = Math.min(30, maxPct);
+  document.getElementById("factModal").classList.add("show");
+  fmUpdate();
+}
+async function fmCreate(){
+  const kind = fmKind(); if (!kind) return;
+  const r = buildFacture(fmDevis, kind, parseFloat(document.getElementById("fm-pct").value));
+  if (r.error){ fmUpdate(); return; }
+  document.getElementById("factModal").classList.remove("show");
+  await flushPending();
+  const f = r.facture;
+  f.id = await dbSaveDoc(f);
+  doc = JSON.parse(JSON.stringify(f));
+  loadFormFromDoc(); showView("editor");
+  showToast("Facture créée en brouillon", "À partir du devis " + (fmDevis.reference||"") + ". Vérifiez-la, puis cliquez sur « Émettre la facture » pour lui attribuer son numéro.", "#2f6b3a");
+}
+async function actionFacturer(){
+  await flushPending();
+  if (!doc.id) await saveNow(false);
+  const dv = docList.find(x=>x.id===doc.id) || doc;
+  openFacturerModal(doc.id ? { ...doc } : dv);
+}
+async function actionEmettre(){
+  if (doc.type!=="facture" || facStatut(doc)!=="brouillon") return;
+  if (!(doc.client.nom||"").trim()){ showToast("Client manquant", "Indiquez le nom du client avant d'émettre la facture.", "#c0392b"); return; }
+  if (docHT(doc) <= 0){ showToast("Facture vide", "Ajoutez des prestations avant d'émettre la facture.", "#c0392b"); return; }
+  doc.statut = "emise";
+  if (!doc.reference) doc.reference = suggestRef("facture");
+  doc.date = agToday(); document.getElementById("f-date").value = doc.date;
+  document.getElementById("f-ref").value = doc.reference;
+  updateStatutVisibility(); renderPreview();
+  await saveNow(false);
+  showToast("Facture émise", "Numéro attribué : " + doc.reference + " (date du jour). Elle ne pourra plus être supprimée, seulement annulée par un avoir.", "#2f6b3a");
+}
+function buildAvoir(f){
+  const sections = f.sections.map((sec,si)=>({ titre:sec.titre, ...(sec.categorie?{categorie:sec.categorie}:{}),
+    lignes: sec.lignes.map((l,i)=> (i>0 && l.lie) ? { ...l, id:uid() } : { ...l, id:uid(), qte: -(parseFloat(l.qte)||0) }) }));
+  return { ...blankDoc(), type:"avoir", reference:suggestRef("avoir"), date:agToday(), statut:"emise",
+    client:{ ...f.client }, objet:"Avoir sur facture " + f.reference + (f.objet ? " — " + f.objet : ""), site:f.site||"", sections,
+    taxes:JSON.parse(JSON.stringify(f.taxes||blankDoc().taxes)), paiement:"", delai:"", validite:"", notes:"",
+    lien:{ factureId:f.id, factureRef:f.reference, factureDate:f.date, kind:"avoir" } };
+}
+async function actionCancelFacture(){
+  const s = facStatut(doc);
+  if (doc.type!=="facture" || !(s==="emise"||s==="payee")) return;
+  await flushPending();
+  if (!doc.id) await saveNow(false);
+  const ok = await confirmAction("Annuler la facture " + doc.reference + " ?",
+    "Un avoir du même montant (" + fmtFCFA(docTTC(doc)) + ") sera créé automatiquement. La facture reste dans la liste, marquée « annulée »." +
+    (s==="payee" ? " Elle est marquée payée : elle sera retirée des recettes ; le remboursement éventuel n'est pas géré par l'outil." : ""));
+  if (!ok) return;
+  const avoir = buildAvoir(doc);
+  avoir.id = await dbSaveDoc(avoir);
+  doc.statut = "annulee"; doc.annuleLe = agToday(); doc.avoirRef = avoir.reference;
+  updateStatutVisibility(); renderPreview();
+  await saveNow(false);
+  showToast("Facture annulée", "Avoir " + avoir.reference + " créé : retrouvez-le dans « Mes documents ».", "#a3402f");
+}
+(function initFacturation(){
+  document.getElementById("btn-facturer").onclick = actionFacturer;
+  document.getElementById("btn-emettre").onclick = actionEmettre;
+  document.getElementById("btn-annuler-fact").onclick = actionCancelFacture;
+  document.getElementById("fm-cancel").onclick = ()=>document.getElementById("factModal").classList.remove("show");
+  document.getElementById("fm-ok").onclick = fmCreate;
+  document.querySelectorAll('input[name="fm-kind"]').forEach(r=>r.addEventListener("change", fmUpdate));
+  document.getElementById("fm-pct").addEventListener("input", ()=>{ document.querySelector('input[name="fm-kind"][value="acompte"]').checked = true; fmUpdate(); });
+})();
+
+/* ===================== Démarrage ===================== */
+document.getElementById("d-date").value = todayISO();
+showView("editor");
+loadFormFromDoc();
+applyParams();
+initDb().then(()=>folderInit());
+
+</script>
+</body>
+</html>
